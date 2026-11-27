@@ -58,6 +58,10 @@ Os dois têm as abas **Instruções**, **Produção** (uma linha por serviço: d
 
 No aplicativo, cada etapa pode ter **fases com peso** (ex.: impermeabilização = regularização 20%, primer 10%, manta 60%, teste de estanqueidade 10%) e os locais podem ser **fachadas** (com mapa de panos) ou **áreas/ambientes**. O **quadro de avanço por local e fase** mostra o andamento de cada etapa e permite lançar a produção com um clique. Os modelos são gerados por `python3 scripts/gerar_rdo.py modelos`.
 
+### RDO do Mais Controle
+
+Na aba **Diário de obra**, o botão **Importar RDO do Mais Controle** lê os relatórios salvos pelo navegador (`.mht`/`.html`, vários de uma vez): data, clima e condição de cada período, mão de obra, atividades (pelo código da planilha orçamentária), status e comentários. O **comentário de cada atividade** deve dizer onde e quanto foi feito, por exemplo `Fachada frente, P3, pav 12 ao 8`, `Cobertura 45 m²`, `Vigas pavimento superior 120 kg` ou `Guarita alvenaria 60%`. Antes de gravar, o aplicativo mostra como entendeu cada atividade; as que não dizem onde nem quanto ficam de fora do avanço.
+
 ## Limitações desta versão
 
 - Os dados ficam salvos **no navegador** (localStorage). Use *Backup e dados* para exportar e restaurar. Para vários usuários ao mesmo tempo é preciso um servidor/banco de dados (próximo passo sugerido).

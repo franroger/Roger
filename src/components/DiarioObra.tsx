@@ -20,6 +20,7 @@ import {
 } from '../lib/producao';
 import { ROTULO_CONDICAO, type Apontamento, type Fase, type ItemOrcamento, type Local, type Obra } from '../lib/types';
 import Importador from './Importador';
+import ImportarMaisControle from './ImportarMaisControle';
 import { BotaoConfirmar } from './ui';
 
 type Props = { obra: Obra; atualizar: (fn: (o: Obra) => Obra) => void };
@@ -123,6 +124,8 @@ export default function DiarioObra({ obra, atualizar }: Props) {
           </li>
         </ol>
       </div>
+
+      <ImportarMaisControle obra={obra} atualizar={atualizar} />
 
       {/* ---------------- LOCAIS ---------------- */}
       <div className="card">
