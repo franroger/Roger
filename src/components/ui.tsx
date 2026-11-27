@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { Gravidade } from '../lib/recomendacoes';
 
 export function Kpi({ rotulo, valor, sub, tom }: { rotulo: string; valor: ReactNode; sub?: ReactNode; tom?: Gravidade }) {
@@ -52,4 +52,42 @@ export function indiceTom(v: number | null, bom = 0.97, ruim = 0.9): Gravidade {
   if (v < ruim) return 'critico';
   if (v < bom) return 'atencao';
   return 'ok';
+}
+
+/** Botão que pede um segundo clique para confirmar (substitui o confirm() do navegador). */
+export function BotaoConfirmar({
+  children,
+  confirmar = 'Clique de novo para confirmar',
+  aoConfirmar,
+  className = 'btn perigo',
+  title,
+}: {
+  children: ReactNode;
+  confirmar?: ReactNode;
+  aoConfirmar: () => void;
+  className?: string;
+  title?: string;
+}) {
+  const [armado, setArmado] = useState(false);
+  useEffect(() => {
+    if (!armado) return;
+    const t = setTimeout(() => setArmado(false), 4000);
+    return () => clearTimeout(t);
+  }, [armado]);
+  return (
+    <button
+      type="button"
+      className={className}
+      title={title}
+      style={armado ? { background: 'var(--bad)', color: '#fff' } : undefined}
+      onClick={() => {
+        if (armado) {
+          setArmado(false);
+          aoConfirmar();
+        } else setArmado(true);
+      }}
+    >
+      {armado ? confirmar : children}
+    </button>
+  );
 }

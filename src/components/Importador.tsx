@@ -28,9 +28,11 @@ export default function Importador({
         <button className="btn sec" onClick={() => ref.current?.click()}>
           {rotulo}
         </button>
-        <button className="btn sec mini" onClick={() => baixarModelo(tipo)}>
-          Baixar modelo
-        </button>
+        {import.meta.env.VITE_MODO !== 'pagina' && (
+          <button className="btn sec mini" onClick={() => baixarModelo(tipo)}>
+            Baixar modelo
+          </button>
+        )}
         <button className="btn sec mini" onClick={() => setAjuda((x) => !x)}>
           ?
         </button>

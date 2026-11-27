@@ -4,7 +4,7 @@ import { useStore } from '../lib/store';
 import { analisarObra } from '../lib/calc';
 import { fmtData, fmtMoeda, hojeISO } from '../lib/format';
 import { ROTULO_STATUS, type Obra } from '../lib/types';
-import { Modal } from '../components/ui';
+import { BotaoConfirmar, Modal } from '../components/ui';
 import ObraForm from '../components/ObraForm';
 import Painel from '../components/Painel';
 import Orcamento from '../components/Orcamento';
@@ -92,17 +92,15 @@ export default function ObraDetalhe() {
             }}
           />
           <hr style={{ margin: '1.25rem 0', border: 0, borderTop: '1px solid var(--line)' }} />
-          <button
-            className="btn perigo"
-            onClick={() => {
-              if (confirm(`Excluir a obra "${obra.nome}" e todos os seus dados? Esta ação não pode ser desfeita.`)) {
-                excluirObra(obra.id);
-                navegar('/');
-              }
+          <BotaoConfirmar
+            confirmar="Clique de novo para excluir a obra e todos os seus dados"
+            aoConfirmar={() => {
+              excluirObra(obra.id);
+              navegar('/');
             }}
           >
             Excluir obra
-          </button>
+          </BotaoConfirmar>
         </Modal>
       )}
     </>

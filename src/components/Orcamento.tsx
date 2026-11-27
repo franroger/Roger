@@ -5,6 +5,7 @@ import { cronogramaFinanceiro, custoPrevisto, executadoItem, valorVenda } from '
 import { diffDias, fmtData, fmtMoeda, fmtNum, fmtPct, rotuloMes, uid } from '../lib/format';
 import { importarOrcamento, paraNumero } from '../lib/importar';
 import Importador from './Importador';
+import { BotaoConfirmar } from './ui';
 
 type Props = { obra: Obra; atualizar: (fn: (o: Obra) => Obra) => void; dataRef: string };
 
@@ -47,8 +48,6 @@ export default function Orcamento({ obra, atualizar, dataRef }: Props) {
   const mudar = (id: string, patch: Partial<ItemOrcamento>) =>
     atualizar((o) => ({ ...o, itens: o.itens.map((i) => (i.id === id ? { ...i, ...patch } : i)) }));
   const remover = (id: string) => {
-    const usados = obra.medicoes.some((m) => m.itemId === id) || obra.lancamentos.some((l) => l.itemId === id);
-    if (usados && !confirm('Esta etapa tem andamentos/lançamentos vinculados. Excluir mesmo assim? (os lançamentos ficarão sem etapa)')) return;
     atualizar((o) => ({
       ...o,
       itens: o.itens.filter((i) => i.id !== id),
@@ -175,9 +174,9 @@ export default function Orcamento({ obra, atualizar, dataRef }: Props) {
                       />
                     </td>
                     <td>
-                      <button className="btn perigo mini" onClick={() => remover(i.id)} title="Excluir etapa">
+                      <BotaoConfirmar className="btn perigo mini" confirmar="Excluir?" aoConfirmar={() => remover(i.id)} title="Excluir etapa (andamentos dela são apagados; lançamentos ficam sem etapa)">
                         ✕
-                      </button>
+                      </BotaoConfirmar>
                     </td>
                   </tr>
                 ))}

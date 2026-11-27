@@ -8,6 +8,7 @@ export default function Dados() {
   const { exportar, substituirTudo, salvarObra, obras } = useStore();
   const ref = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState('');
+  const [pendente, setPendente] = useState<BancoDados | null>(null);
 
   const baixar = () => {
     const blob = new Blob([exportar()], { type: 'application/json' });
@@ -28,8 +29,13 @@ export default function Dados() {
           Nesta versão os dados ficam salvos neste navegador, neste computador. Faça backup com frequência e use o arquivo de backup para levar os
           dados para outro computador.
         </p>
+        {import.meta.env.VITE_MODO === 'pagina' && (
+          <div className="aviso">
+            Nesta versão online não é possível baixar arquivos (backup e modelos de planilha). Para isso, use o aplicativo instalado no computador.
+          </div>
+        )}
         <div className="linha">
-          <button className="btn" onClick={baixar}>
+          <button className="btn" onClick={baixar} disabled={import.meta.env.VITE_MODO === 'pagina'}>
             Baixar backup ({obras.length} obra{obras.length === 1 ? '' : 's'})
           </button>
           <button className="btn sec" onClick={() => ref.current?.click()}>
@@ -56,16 +62,34 @@ export default function Dados() {
               try {
                 const db = JSON.parse(await f.text()) as BancoDados;
                 if (!Array.isArray(db.obras)) throw new Error('arquivo sem obras');
-                if (confirm(`Substituir os dados atuais por ${db.obras.length} obra(s) do backup?`)) {
-                  substituirTudo({ versao: 1, obras: db.obras });
-                  setMsg('Backup restaurado.');
-                }
+                setPendente(db);
+                setMsg('');
               } catch (err) {
                 setMsg(`Arquivo inválido: ${(err as Error).message}`);
               }
             }}
           />
         </div>
+        {pendente && (
+          <div className="aviso linha">
+            <span className="espaco">
+              O backup tem {pendente.obras.length} obra(s). Restaurar substitui as {obras.length} obra(s) atuais.
+            </span>
+            <button
+              className="btn"
+              onClick={() => {
+                substituirTudo({ versao: 1, obras: pendente.obras });
+                setPendente(null);
+                setMsg('Backup restaurado.');
+              }}
+            >
+              Substituir dados
+            </button>
+            <button className="btn sec" onClick={() => setPendente(null)}>
+              Cancelar
+            </button>
+          </div>
+        )}
         {msg && <div className="sucesso">{msg}</div>}
       </div>
       <div className="card">

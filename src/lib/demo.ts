@@ -95,7 +95,7 @@ export function obraExemplo(): Obra {
 
   return {
     id: uid(),
-    nome: 'Cond. Edifício Atlântico – Fachada e impermeabilização',
+    nome: 'Exemplo – Cond. Edifício Atlântico (fachada e impermeabilização)',
     cliente: 'Condomínio Edifício Atlântico',
     endereco: 'Av. Beira Mar, 1500 – Centro',
     numeroContrato: 'CT-2026/014',
