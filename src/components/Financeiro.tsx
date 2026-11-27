@@ -6,6 +6,7 @@ import type { Lancamento, Obra } from '../lib/types';
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA, ROTULO_CATEGORIA } from '../lib/types';
 import Importador from './Importador';
 import { Kpi } from './ui';
+import ReceitasDespesas from './ReceitasDespesas';
 
 type Props = { obra: Obra; analise: AnaliseObra; atualizar: (fn: (o: Obra) => Obra) => void };
 
@@ -40,11 +41,6 @@ export default function Financeiro({ obra, analise: a, atualizar }: Props) {
     [obra.lancamentos, filtroTipo, filtroItem],
   );
 
-  const porCategoria = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const l of obra.lancamentos) if (l.tipo === 'despesa') m.set(l.categoria, (m.get(l.categoria) ?? 0) + l.valor);
-    return [...m.entries()].sort((x, y) => y[1] - x[1]);
-  }, [obra.lancamentos]);
 
   const nomeItem = (id?: string) => {
     if (!id) return <span className="muted">sem etapa</span>;
@@ -66,10 +62,20 @@ export default function Financeiro({ obra, analise: a, atualizar }: Props) {
         <Kpi rotulo="A receber pelo executado" valor={fmtMoeda(a.aReceber)} sub="Executado (preço de venda) − recebido" tom={a.aReceber > 0 ? 'atencao' : 'ok'} />
       </div>
 
+      <ReceitasDespesas obra={obra} analise={a} />
+
       <div className="card">
         <div className="linha entre">
           <div>
             <h2>Novo lançamento</h2>
+            <div className="linha" style={{ margin: '.3rem 0' }}>
+              <button className={`btn mini ${f.tipo === 'receita' ? '' : 'sec'}`} onClick={() => setF((x) => ({ ...x, tipo: 'receita', categoria: 'medicao', itemId: '' }))}>
+                + Receita (recebimento do cliente)
+              </button>
+              <button className={`btn mini ${f.tipo === 'despesa' ? '' : 'sec'}`} onClick={() => setF((x) => ({ ...x, tipo: 'despesa', categoria: 'material' }))}>
+                + Despesa (custo)
+              </button>
+            </div>
             <div className="muted peq">Apropriar cada despesa a uma etapa da planilha permite comparar gasto x orçado por etapa.</div>
           </div>
           <Importador
@@ -141,8 +147,7 @@ export default function Financeiro({ obra, analise: a, atualizar }: Props) {
         </div>
       </div>
 
-      <div className="grade g2">
-        <div className="card">
+      <div className="card">
           <h2>Gasto x orçado por etapa</h2>
           <div className="tabela-wrap">
             <table>
@@ -187,26 +192,6 @@ export default function Financeiro({ obra, analise: a, atualizar }: Props) {
             Em vermelho: etapas em que o % do orçamento já gasto supera o % executado em mais de 10 pontos.
           </div>
         </div>
-        <div className="card">
-          <h2>Despesas por categoria</h2>
-          <table>
-            <tbody>
-              {porCategoria.map(([c, v]) => (
-                <tr key={c}>
-                  <td>{ROTULO_CATEGORIA[c] ?? c}</td>
-                  <td className="num">{fmtMoeda(v)}</td>
-                  <td className="num muted">{fmtPct((v / (a.despesas || 1)) * 100, 0)}</td>
-                </tr>
-              ))}
-              {porCategoria.length === 0 && (
-                <tr>
-                  <td className="muted">Sem despesas.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       <div className="card">
         <div className="linha entre">

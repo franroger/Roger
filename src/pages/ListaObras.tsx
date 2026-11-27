@@ -98,6 +98,53 @@ export default function ListaObras() {
         </div>
       )}
 
+      {obras.length > 0 && (
+        <div className="card" style={{ marginTop: '1rem' }}>
+          <h2>Receitas x despesas por obra</h2>
+          <div className="tabela-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Obra</th>
+                  <th className="num">Contrato</th>
+                  <th className="num">Recebido</th>
+                  <th className="num">Falta receber</th>
+                  <th className="num">Gasto</th>
+                  <th className="num">Saldo (receita − despesa)</th>
+                  <th className="num">Resultado projetado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {linhas.map(({ obra, a }) => (
+                  <tr key={obra.id}>
+                    <td>
+                      <Link to={`/obra/${obra.id}`}>{obra.nome}</Link>
+                    </td>
+                    <td className="num">{fmtMoeda(a.valorContrato)}</td>
+                    <td className="num pos">{fmtMoeda(a.receitas)}</td>
+                    <td className="num">{fmtMoeda(Math.max(0, a.valorContrato - a.receitas))}</td>
+                    <td className="num neg">{fmtMoeda(a.despesas)}</td>
+                    <td className={`num ${a.saldoCaixa < 0 ? 'neg' : 'pos'}`}>{fmtMoeda(a.saldoCaixa)}</td>
+                    <td className={`num ${a.margemProjetada < 0 ? 'neg' : 'pos'}`}>{fmtMoeda(a.margemProjetada)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Total</td>
+                  <td className="num">{fmtMoeda(linhas.reduce((s, l) => s + l.a.valorContrato, 0))}</td>
+                  <td className="num">{fmtMoeda(linhas.reduce((s, l) => s + l.a.receitas, 0))}</td>
+                  <td className="num">{fmtMoeda(linhas.reduce((s, l) => s + Math.max(0, l.a.valorContrato - l.a.receitas), 0))}</td>
+                  <td className="num">{fmtMoeda(linhas.reduce((s, l) => s + l.a.despesas, 0))}</td>
+                  <td className="num">{fmtMoeda(linhas.reduce((s, l) => s + l.a.saldoCaixa, 0))}</td>
+                  <td className="num">{fmtMoeda(linhas.reduce((s, l) => s + l.a.margemProjetada, 0))}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
       {nova && (
         <Modal titulo="Nova obra" aoFechar={() => setNova(false)}>
           <ObraForm

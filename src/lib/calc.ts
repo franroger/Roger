@@ -307,24 +307,44 @@ export interface PontoFluxo {
   mes: string;
   receitas: number;
   despesas: number;
+  saldoMes: number;
   saldoAcumulado: number;
+  /** Faturamento previsto no mês pelo cronograma (valor de venda, ajustado ao contrato). */
+  receitaPrevista: number;
   custoPrevisto: number;
+  saldoPrevistoAcumulado: number;
 }
 
-/** Fluxo de caixa mensal: receitas x despesas realizadas e custo previsto pelo cronograma. */
+/** Fluxo de caixa mensal: receitas x despesas realizadas e previstas pelo cronograma. */
 export function fluxoCaixa(obra: Obra): PontoFluxo[] {
   const [ini, fim] = limitesObra(obra);
+  const totVenda = obra.itens.reduce((s, i) => s + valorVenda(i), 0);
+  const fator = obra.valorContrato > 0 && totVenda > 0 ? obra.valorContrato / totVenda : 1;
   let acumulado = 0;
+  let acumPrev = 0;
   return mesesEntre(ini, fim).map((mes) => {
     const doMes = obra.lancamentos.filter((l) => l.data.slice(0, 7) === mes);
     const receitas = doMes.filter((l) => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0);
     const despesas = doMes.filter((l) => l.tipo === 'despesa').reduce((s, l) => s + l.valor, 0);
     acumulado += receitas - despesas;
-    const inicioMes = `${mes}-01`;
-    const custoPrev = obra.itens.reduce((s, i) => {
-      const frac = (planejadoItem(i, fimDoMes(mes)) - planejadoItem(i, addDias(inicioMes, -1))) / 100;
-      return s + frac * custoPrevisto(i);
-    }, 0);
-    return { mes, receitas, despesas, saldoAcumulado: acumulado, custoPrevisto: custoPrev };
+    const antes = addDias(`${mes}-01`, -1);
+    let custoPrev = 0;
+    let receitaPrev = 0;
+    for (const i of obra.itens) {
+      const frac = (planejadoItem(i, fimDoMes(mes)) - planejadoItem(i, antes)) / 100;
+      custoPrev += frac * custoPrevisto(i);
+      receitaPrev += frac * valorVenda(i) * fator;
+    }
+    acumPrev += receitaPrev - custoPrev;
+    return {
+      mes,
+      receitas,
+      despesas,
+      saldoMes: receitas - despesas,
+      saldoAcumulado: acumulado,
+      receitaPrevista: receitaPrev,
+      custoPrevisto: custoPrev,
+      saldoPrevistoAcumulado: acumPrev,
+    };
   });
 }
