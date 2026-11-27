@@ -47,14 +47,16 @@ Em cada aba há o botão **Baixar modelo** com as colunas esperadas. O importado
 
 ## Relatório Diário de Obra (RDO)
 
-O arquivo [`modelos/RDO-modelo.xlsx`](modelos/RDO-modelo.xlsx) é o RDO para a equipe de campo preencher. Ele tem quatro abas:
+Há dois modelos em Excel para a equipe de campo, ambos lidos pelo aplicativo (obra → **Diário de obra → Importar RDO / diário**):
 
-- **Instruções**: como preencher, com exemplo.
-- **Produção**: uma linha por serviço do dia, com data, etapa (código), local, prumada, pavimento inicial e final **ou** quantidade, equipe e observação. A descrição e a unidade da etapa aparecem automaticamente.
-- **Dias**: uma linha por dia, com responsável, clima de manhã e de tarde, condição (praticável, parcial, impraticável), efetivo próprio e terceirizado, horas paradas, motivo e ocorrências.
-- **Cadastro**: etapas e locais da obra (os mesmos do aplicativo), que viram listas de escolha nas outras abas.
+| Modelo | Para | Como a produção é informada |
+|---|---|---|
+| [`modelos/RDO-fachada.xlsx`](modelos/RDO-fachada.xlsx) | Recuperação e pintura de fachada | Prumada do balancim + faixa de pavimentos (ou quantidade, fora da fachada) |
+| [`modelos/RDO-geral.xlsx`](modelos/RDO-geral.xlsx) | Impermeabilização, reformas (guarita, banheiros…) e demais serviços | Quantidade feita no dia **ou** % concluído acumulado do serviço naquele local |
 
-No aplicativo: obra → **Diário de obra → Importar RDO / diário**. A produção vira quantidade e % das etapas; os dias alimentam o resumo de dias perdidos e a recomendação de prorrogação de prazo. No aplicativo instalado, o botão **Baixar RDO desta obra** gera a planilha já com as etapas e locais da obra (sem as listas de escolha do modelo).
+Os dois têm as abas **Instruções**, **Produção** (uma linha por serviço: data, etapa, local, fase, medição, equipe, observação), **Dias** (clima, condição do dia, efetivo, horas paradas, motivo, ocorrências) e **Cadastro** (etapas, fases com peso e locais da obra, que viram listas de escolha).
+
+No aplicativo, cada etapa pode ter **fases com peso** (ex.: impermeabilização = regularização 20%, primer 10%, manta 60%, teste de estanqueidade 10%) e os locais podem ser **fachadas** (com mapa de panos) ou **áreas/ambientes**. O **quadro de avanço por local e fase** mostra o andamento de cada etapa e permite lançar a produção com um clique. Os modelos são gerados por `python3 scripts/gerar_rdo.py modelos`.
 
 ## Limitações desta versão
 

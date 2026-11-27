@@ -1,7 +1,8 @@
 import { addDias, hojeISO, uid } from './format';
 import { gerarParcelas } from './contrato';
 import { obraExemplo } from './demo';
-import { contratoVazio, type ItemOrcamento, type Lancamento, type Medicao, type Obra } from './types';
+import { contratoVazio, type Apontamento, type Fase, type ItemOrcamento, type Lancamento, type Local, type Medicao, type Obra } from './types';
+import { FASES_PADRAO } from './producao';
 
 type ItemDef = [string, string, string, number, number, number, ItemOrcamento['execucao'], string, number, number];
 
@@ -22,10 +23,18 @@ function montar(opts: {
   adiantamentoPct: number;
   retencaoPct: number;
   status: Obra['status'];
+  /** [nome, tipo, área] */
+  locais?: [string, 'fachada' | 'area', number][];
+  /** por item: índices dos locais e fases */
+  itemLocais?: Record<number, number[]>;
+  itemFases?: Record<number, Fase[]>;
+  /** [item, local (-1 = etapa inteira), dia, fase, quantidade | {pct}] */
+  producao?: [number, number, number, string, number | { pct: number }][];
 }): Obra {
   const ini = addDias(hojeISO(), -opts.inicioHaDias);
   const d = (n: number) => addDias(ini, n);
-  const itens: ItemOrcamento[] = opts.itens.map(([codigo, descricao, unidade, quantidade, precoUnitario, custoUnitario, execucao, responsavel, a, b]) => ({
+  const locais: Local[] = (opts.locais ?? []).map(([nome, tipo, area]) => ({ id: uid(), nome, tipo, area, pavimentos: 1, prumadas: 1 }));
+  const itens: ItemOrcamento[] = opts.itens.map(([codigo, descricao, unidade, quantidade, precoUnitario, custoUnitario, execucao, responsavel, a, b], k) => ({
     id: uid(),
     codigo,
     descricao,
@@ -37,6 +46,17 @@ function montar(opts: {
     responsavel,
     inicioPrevisto: d(a),
     fimPrevisto: d(b),
+    locais: opts.itemLocais?.[k]?.map((j) => locais[j].id),
+    fases: opts.itemFases?.[k],
+  }));
+  const apontamentos: Apontamento[] = (opts.producao ?? []).map(([k, j, dia, fase, v]) => ({
+    id: uid(),
+    data: d(dia),
+    itemId: itens[k].id,
+    localId: j >= 0 ? locais[j].id : undefined,
+    fase: fase || undefined,
+    quantidade: typeof v === 'number' ? v : 0,
+    percentual: typeof v === 'number' ? undefined : v.pct,
   }));
   const medicoes: Medicao[] = opts.medicoes.map(([k, dia, p]) => ({ id: uid(), itemId: itens[k].id, data: d(dia), percentual: p }));
   const lancamentos: Lancamento[] = [
@@ -66,6 +86,8 @@ function montar(opts: {
     medicoes,
     lancamentos,
     criadoEm: hojeISO(),
+    locais: locais.length ? locais : undefined,
+    apontamentos: apontamentos.length ? apontamentos : undefined,
   };
   const contrato = {
     ...contratoVazio(),
@@ -99,6 +121,44 @@ function mirante(): Obra {
       ['2', 'Impermeabilização com manta asfáltica (lajes)', 'm²', 2400, 135, 92, 'terceirizada', 'ImperTec Impermeabilizações', 15, 80],
       ['3', 'Cristalização de cortinas e poço de elevador', 'm²', 900, 95, 62, 'propria', 'Equipe própria – Encarregado Paulo', 30, 95],
       ['4', 'Proteção mecânica e regularização', 'm²', 2400, 38, 26, 'propria', 'Equipe própria', 60, 115],
+      ['5', 'Reforma da guarita', 'vb', 1, 38000, 26000, 'propria', 'Equipe própria – Encarregado Paulo', 25, 100],
+    ],
+    locais: [
+      ['Laje garagem G1', 'area', 1200],
+      ['Laje garagem G2', 'area', 900],
+      ['Rampa de acesso', 'area', 300],
+      ['Cortinas de contenção', 'area', 700],
+      ['Poço do elevador', 'area', 200],
+      ['Guarita', 'area', 1],
+    ],
+    itemLocais: { 0: [0, 1, 2], 1: [0, 1, 2], 2: [3, 4], 3: [0, 1, 2], 4: [5] },
+    itemFases: {
+      1: [
+        { nome: 'Regularização / preparo', peso: 20 },
+        { nome: 'Primer', peso: 10 },
+        { nome: 'Manta', peso: 60 },
+        { nome: 'Teste de estanqueidade', peso: 10 },
+      ],
+      2: FASES_PADRAO['Impermeabilização cimentícia / cristalização'],
+      4: FASES_PADRAO['Reforma de ambiente (guarita, banheiro...)'],
+    },
+    producao: [
+      [1, 0, 20, 'Regularização / preparo', 1200],
+      [1, 0, 26, 'Primer', 1200],
+      [1, 0, 33, 'Manta', 500],
+      [1, 0, 40, 'Manta', 450],
+      [1, 0, 44, 'Manta', 250],
+      [1, 0, 44, 'Teste de estanqueidade', { pct: 50 }],
+      [1, 1, 38, 'Regularização / preparo', 900],
+      [1, 1, 43, 'Primer', 600],
+      [1, 2, 44, 'Regularização / preparo', { pct: 40 }],
+      [2, 3, 36, 'Limpeza e apicoamento', { pct: 100 }],
+      [2, 3, 44, 'Tratamento de fissuras', { pct: 60 }],
+      [2, 4, 42, 'Limpeza e apicoamento', { pct: 100 }],
+      [2, 4, 44, 'Aplicação (demãos)', { pct: 30 }],
+      [4, 5, 30, 'Demolição', { pct: 100 }],
+      [4, 5, 44, 'Alvenaria / estrutura', { pct: 70 }],
+      [4, 5, 44, 'Instalações elétricas e hidráulicas', { pct: 20 }],
     ],
     medicoes: [
       [0, 18, 100],

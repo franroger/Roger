@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { toISO, uid } from './format';
 import type { Apontamento, CondicaoDia, ItemOrcamento, Lancamento, Medicao, Obra, RegistroDia, TipoExecucao } from './types';
-import { apontamentoDeTrecho, lerPrumadas } from './producao';
+import { apontamentoDeTrecho, ehFachada, fasesDoItem, lerPrumadas } from './producao';
 
 export type TipoImportacao = 'orcamento' | 'andamento' | 'financeiro' | 'diario';
 
@@ -218,11 +218,11 @@ export function baixarRdoDaObra(obra: Obra) {
   const wb = XLSX.utils.book_new();
   const prod = XLSX.utils.aoa_to_sheet([
     [`RDO – Produção do dia · ${obra.nome}`],
-    ['Uma linha por serviço executado. Use o trecho (prumada + pavimentos) OU a quantidade.'],
+    ['Uma linha por serviço. Informe a quantidade feita no dia, OU o % concluído acumulado, OU (em fachada) a prumada + pavimentos.'],
     [],
-    ['Data', 'Etapa (código)', 'Local', 'Prumada', 'Pavimento inicial', 'Pavimento final', 'Quantidade', 'Equipe', 'Observação'],
+    ['Data', 'Etapa (código)', 'Local', 'Fase', 'Prumada', 'Pavimento inicial', 'Pavimento final', 'Quantidade', '% concluído (acumulado)', 'Equipe', 'Observação'],
   ]);
-  prod['!cols'] = [12, 14, 20, 10, 12, 12, 12, 22, 40].map((wch) => ({ wch }));
+  prod['!cols'] = [12, 14, 20, 22, 10, 12, 12, 12, 14, 22, 40].map((wch) => ({ wch }));
   const dias = XLSX.utils.aoa_to_sheet([
     [`RDO – Condições do dia · ${obra.nome}`],
     ['Uma linha por dia. Condição: Praticável, Parcialmente praticável ou Impraticável.'],
@@ -233,13 +233,19 @@ export function baixarRdoDaObra(obra: Obra) {
   const cad = XLSX.utils.aoa_to_sheet([
     ['Cadastro da obra (consulta)'],
     [],
-    ['Código', 'Etapa', 'Unidade', 'Locais'],
-    ...obra.itens.map((i) => [i.codigo, i.descricao, i.unidade, (obra.locais ?? []).filter((l) => (i.locais ?? []).includes(l.id)).map((l) => l.nome).join(', ')]),
+    ['Código', 'Etapa', 'Unidade', 'Locais', 'Fases (peso %)'],
+    ...obra.itens.map((i) => [
+      i.codigo,
+      i.descricao,
+      i.unidade,
+      (obra.locais ?? []).filter((l) => (i.locais ?? []).includes(l.id)).map((l) => l.nome).join(', '),
+      (i.fases ?? []).map((f) => `${f.nome} (${f.peso}%)`).join('; '),
+    ]),
     [],
-    ['Local', 'Pavimentos', 'Prumadas'],
-    ...(obra.locais ?? []).map((l) => [l.nome, l.pavimentos, l.prumadas]),
+    ['Local', 'Tipo', 'Pavimentos', 'Prumadas'],
+    ...(obra.locais ?? []).map((l) => [l.nome, ehFachada(l) ? 'Fachada' : 'Área / ambiente', ehFachada(l) ? l.pavimentos : '', ehFachada(l) ? l.prumadas : '']),
   ]);
-  cad['!cols'] = [{ wch: 10 }, { wch: 45 }, { wch: 10 }, { wch: 50 }];
+  cad['!cols'] = [{ wch: 10 }, { wch: 45 }, { wch: 10 }, { wch: 50 }, { wch: 60 }];
   XLSX.utils.book_append_sheet(wb, prod, 'Produção');
   XLSX.utils.book_append_sheet(wb, dias, 'Dias');
   XLSX.utils.book_append_sheet(wb, cad, 'Cadastro');
@@ -347,17 +353,34 @@ export function importarDiario(obra: Obra, linhas: Linha[]): ResultadoImportacao
     const prumadas = lerPrumadas(texto(campo(l, ['prumada', 'balancim', 'pano', 'coluna'])));
     const pavDe = paraNumero(campo(l, ['pavimento inicial', 'pav inicial', 'do pavimento', 'de pav', 'pavimento de', 'de']));
     const pavAte = paraNumero(campo(l, ['pavimento final', 'pav final', 'ate o pavimento', 'ate pav', 'pavimento ate', 'ate']));
-    const qtd = paraNumero(campo(l, ['quantidade', 'qtd', 'qtde', 'executado', 'producao']));
+    const qtd = paraNumero(campo(l, ['quantidade', 'qtd', 'qtde', 'producao']));
+    const pctBruto = campo(l, ['% concluido', '% acumulado', 'percentual', 'concluido', '% executado']);
+    let pct: number | undefined = texto(pctBruto) ? paraNumero(pctBruto) : undefined;
+    if (pct !== undefined && pct > 0 && pct <= 1 && typeof pctBruto === 'number') pct *= 100; // célula formatada como %
+
+    // Fase: precisa existir na etapa (quando a etapa tem fases)
+    const faseTxt = texto(campo(l, ['fase', 'etapa do servico', 'camada']));
+    let fase: string | undefined;
+    if (faseTxt) {
+      const achada = fasesDoItem(item).find((f) => f.nome && (norm(f.nome) === norm(faseTxt) || norm(f.nome).includes(norm(faseTxt))));
+      if (!achada) {
+        avisos.push(`Linha ${linhaExcel(l, k)}: fase "${faseTxt}" não cadastrada na etapa ${item.codigo} — linha ignorada.`);
+        return;
+      }
+      fase = achada.nome;
+    }
 
     let novo: Apontamento | null = null;
-    if (local && prumadas.length && (pavDe || pavAte)) {
-      const r = apontamentoDeTrecho(atual, item, local, data, prumadas, pavDe || pavAte, pavAte || pavDe, { equipe, observacao });
+    if (local && ehFachada(local) && prumadas.length && (pavDe || pavAte)) {
+      const r = apontamentoDeTrecho(atual, item, local, data, prumadas, pavDe || pavAte, pavAte || pavDe, { equipe, observacao, fase });
       if (r.repetidos) avisos.push(`Linha ${linhaExcel(l, k)}: ${r.repetidos} pano(s) já estavam registrados e não foram contados de novo.`);
       novo = r.apontamento;
     } else if (qtd > 0) {
-      novo = { id: uid(), data, itemId: item.id, localId: local?.id, quantidade: qtd, equipe, observacao };
+      novo = { id: uid(), data, itemId: item.id, localId: local?.id, fase, quantidade: qtd, equipe, observacao };
+    } else if (pct !== undefined) {
+      novo = { id: uid(), data, itemId: item.id, localId: local?.id, fase, quantidade: 0, percentual: Math.min(100, Math.max(0, pct)), equipe, observacao };
     } else {
-      avisos.push(`Linha ${linhaExcel(l, k)}: sem quantidade nem trecho (prumada e pavimentos) — ignorada.`);
+      avisos.push(`Linha ${linhaExcel(l, k)}: sem quantidade, % concluído ou trecho (prumada e pavimentos) — ignorada.`);
     }
     if (novo) {
       registros.push(novo);

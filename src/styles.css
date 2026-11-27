@@ -199,3 +199,10 @@ th.ordenavel:hover { color: var(--brand); }
 .pano.sel { background: #f47230; }
 .pano.feito { background: var(--brand); cursor: default; }
 .pano:focus-visible, .mapa-cab:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* Quadro de avanço por local e fase */
+.quadro td, .quadro th { text-align: center; }
+.quadro td:first-child, .quadro th:first-child { text-align: left; }
+.celula-avanco { width: 100%; min-width: 64px; border: none; border-radius: 4px; padding: .35rem .25rem; font: inherit; font-size: .85rem; font-variant-numeric: tabular-nums; cursor: pointer; }
+.celula-avanco:hover { outline: 2px solid var(--brand); }
+.celula-avanco:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }

@@ -2,7 +2,7 @@ import { addDias, hojeISO, uid } from './format';
 import type { DadosContrato, ItemOrcamento, Lancamento, Local, Medicao, Obra } from './types';
 import { contratoVazio } from './types';
 import { gerarParcelas } from './contrato';
-import { apontamentoDeTrecho, locaisPadrao } from './producao';
+import { FASES_PADRAO, apontamentoDeTrecho, locaisPadrao } from './producao';
 
 /** Obra de exemplo: reforma de fachada e impermeabilização, com datas relativas a hoje. */
 export function obraExemplo(): Obra {
@@ -133,11 +133,12 @@ export function obraExemplo(): Obra {
   // Fachadas (10 pavimentos) e produção do diário para as etapas de fachada.
   const fachadas = locaisPadrao(10, 4200);
   const ids = fachadas.map((l) => l.id);
-  const cobertura: Local = { id: uid(), nome: 'Cobertura', area: 650, pavimentos: 1, prumadas: 1 };
-  const reservatorios: Local = { id: uid(), nome: 'Reservatórios', area: 180, pavimentos: 1, prumadas: 1 };
+  const cobertura: Local = { id: uid(), nome: 'Cobertura', tipo: 'area', area: 650, pavimentos: 1, prumadas: 1 };
+  const reservatorios: Local = { id: uid(), nome: 'Reservatórios', tipo: 'area', area: 180, pavimentos: 1, prumadas: 1 };
   const locais = [...fachadas, cobertura, reservatorios];
   const comLocais = itens.map((i) => {
-    if (['2.1', '2.2', '4.2'].includes(i.codigo)) return { ...i, locais: ids };
+    if (i.codigo === '4.2') return { ...i, locais: ids, fases: FASES_PADRAO['Pintura'].map((f) => ({ ...f })) };
+    if (['2.1', '2.2'].includes(i.codigo)) return { ...i, locais: ids };
     if (i.codigo === '4.1') return { ...i, locais: ids.slice(0, 2) };
     if (i.codigo === '3.1') return { ...i, locais: [cobertura.id] };
     if (i.codigo === '3.2') return { ...i, locais: [reservatorios.id] };

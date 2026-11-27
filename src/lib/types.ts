@@ -29,6 +29,13 @@ export interface ItemOrcamento {
   fimPrevisto: string; // yyyy-mm-dd
   /** Locais onde a etapa é executada (a quantidade é dividida pela área de cada um). */
   locais?: string[];
+  /** Fases da etapa com o peso de cada uma no avanço (os pesos somam 100). */
+  fases?: Fase[];
+}
+
+export interface Fase {
+  nome: string;
+  peso: number;
 }
 
 /** Registro de andamento: percentual físico acumulado de uma etapa numa data. */
@@ -108,6 +115,8 @@ export const ROTULO_CONDICAO: Record<CondicaoDia, string> = {
 export interface Local {
   id: string;
   nome: string;
+  /** Fachada (dividida em panos) ou área/ambiente (laje, guarita, banheiro...). */
+  tipo?: 'fachada' | 'area';
   /** Área ou extensão total do local, na unidade das etapas (m², m). */
   area: number;
   pavimentos: number;
@@ -124,6 +133,10 @@ export interface Apontamento {
   quantidade: number;
   /** Panos concluídos, no formato "prumada-pavimento" (ex.: "3-12"). */
   panos?: string[];
+  /** Fase da etapa (ex.: "Manta"). Sem fase = vale para a etapa inteira. */
+  fase?: string;
+  /** Alternativa à quantidade: % acumulado concluído no local (ou na etapa, sem local). */
+  percentual?: number;
   equipe?: string;
   observacao?: string;
 }
