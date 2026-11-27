@@ -1,5 +1,6 @@
 import { addDias, diffDias, hojeISO, parseISO, toISO } from './format';
 import type { ItemOrcamento, Obra, TipoExecucao } from './types';
+import { percentualPorDiario } from './producao';
 
 export const valorVenda = (i: ItemOrcamento) => i.quantidade * i.precoUnitario;
 export const custoPrevisto = (i: ItemOrcamento) => i.quantidade * i.custoUnitario;
@@ -21,7 +22,11 @@ export function executadoItem(obra: Obra, itemId: string, data: string): number 
     if (m.itemId !== itemId || m.data > data) continue;
     if (!melhor || m.data >= melhor.data) melhor = m;
   }
-  return melhor ? Math.min(100, Math.max(0, melhor.percentual)) : 0;
+  const porMedicao = melhor ? Math.min(100, Math.max(0, melhor.percentual)) : 0;
+  // Se houver produção no diário de obra, vale o maior dos dois (evita regredir ao trocar de método).
+  const item = obra.apontamentos?.length ? obra.itens.find((i) => i.id === itemId) : undefined;
+  const porDiario = item ? percentualPorDiario(obra, item, data) : null;
+  return porDiario === null ? porMedicao : Math.max(porMedicao, porDiario);
 }
 
 /** Peso do item: valor de venda (padrão de cronograma físico-financeiro). Cai para o custo se não houver preço. */

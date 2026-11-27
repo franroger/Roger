@@ -1,8 +1,9 @@
 import * as XLSX from 'xlsx';
 import { toISO, uid } from './format';
-import type { ItemOrcamento, Lancamento, Medicao, Obra, TipoExecucao } from './types';
+import type { Apontamento, ItemOrcamento, Lancamento, Medicao, Obra, TipoExecucao } from './types';
+import { apontamentoDeTrecho, lerPrumadas } from './producao';
 
-export type TipoImportacao = 'orcamento' | 'andamento' | 'financeiro';
+export type TipoImportacao = 'orcamento' | 'andamento' | 'financeiro' | 'diario';
 
 type Linha = Record<string, unknown>;
 
@@ -228,8 +229,67 @@ export function importarFinanceiro(obra: Obra, linhas: Linha[]): ResultadoImport
   return { registros, avisos };
 }
 
+/**
+ * Diário de obra: cada linha diz o que foi feito, onde e quanto.
+ * Pode trazer a quantidade (m², m...) OU o trecho da fachada (prumada + pavimentos).
+ */
+export function importarDiario(obra: Obra, linhas: Linha[]): ResultadoImportacao<Apontamento> {
+  const avisos: string[] = [];
+  const registros: Apontamento[] = [];
+  const locais = obra.locais ?? [];
+  // Obra "temporária" que vai acumulando os registros, para não contar o mesmo pano duas vezes.
+  let atual: Obra = { ...obra, apontamentos: [...(obra.apontamentos ?? [])] };
+  linhas.forEach((l, k) => {
+    const ref = campo(l, ['codigo', 'cod', 'etapa', 'servico', 'item']);
+    if (!texto(ref)) return;
+    const item = acharItem(obra, ref) ?? acharItem(obra, campo(l, ['descricao', 'servico', 'etapa']));
+    if (!item) {
+      avisos.push(`Linha ${k + 2}: etapa "${texto(ref)}" não encontrada na planilha orçamentária.`);
+      return;
+    }
+    const data = paraData(campo(l, ['data', 'dia']));
+    if (!data) {
+      avisos.push(`Linha ${k + 2}: data inválida.`);
+      return;
+    }
+    const localTxt = norm(texto(campo(l, ['local', 'fachada', 'area', 'ambiente'])));
+    const local = localTxt
+      ? locais.find((x) => norm(x.nome) === localTxt) ?? locais.find((x) => norm(x.nome).includes(localTxt) || localTxt.includes(norm(x.nome)))
+      : undefined;
+    if (localTxt && !local) avisos.push(`Linha ${k + 2}: local "${texto(campo(l, ['local', 'fachada']))}" não cadastrado — registrado sem local.`);
+    const equipe = texto(campo(l, ['equipe', 'encarregado', 'responsavel']));
+    const observacao = texto(campo(l, ['observacao', 'obs', 'ocorrencia']));
+    const prumadas = lerPrumadas(texto(campo(l, ['prumada', 'balancim', 'pano', 'coluna'])));
+    const pavDe = paraNumero(campo(l, ['pavimento inicial', 'pav inicial', 'do pavimento', 'de pav', 'pavimento de', 'de']));
+    const pavAte = paraNumero(campo(l, ['pavimento final', 'pav final', 'ate o pavimento', 'ate pav', 'pavimento ate', 'ate']));
+    const qtd = paraNumero(campo(l, ['quantidade', 'qtd', 'qtde', 'executado', 'producao']));
+
+    let novo: Apontamento | null = null;
+    if (local && prumadas.length && (pavDe || pavAte)) {
+      const r = apontamentoDeTrecho(atual, item, local, data, prumadas, pavDe || pavAte, pavAte || pavDe, { equipe, observacao });
+      if (r.repetidos) avisos.push(`Linha ${k + 2}: ${r.repetidos} pano(s) já estavam registrados e não foram contados de novo.`);
+      novo = r.apontamento;
+    } else if (qtd > 0) {
+      novo = { id: uid(), data, itemId: item.id, localId: local?.id, quantidade: qtd, equipe, observacao };
+    } else {
+      avisos.push(`Linha ${k + 2}: sem quantidade nem trecho (prumada e pavimentos) — ignorada.`);
+    }
+    if (novo) {
+      registros.push(novo);
+      atual = { ...atual, apontamentos: [...(atual.apontamentos ?? []), novo] };
+    }
+  });
+  return { registros, avisos };
+}
+
 export function baixarModelo(tipo: TipoImportacao) {
   const modelos: Record<TipoImportacao, (string | number)[][]> = {
+    diario: [
+      ['Data', 'Etapa', 'Local', 'Prumada', 'Pavimento inicial', 'Pavimento final', 'Quantidade', 'Equipe', 'Observação'],
+      ['02/12/2026', '2.1', 'Fachada frente', '3', 12, 8, '', 'Equipe João', 'Lavagem concluída na prumada 3'],
+      ['02/12/2026', '4.2', 'Lateral esquerda', '1-2', 15, 13, '', 'Equipe Marcos', 'Textura aplicada'],
+      ['02/12/2026', '3.1', 'Cobertura', '', '', '', 85, 'ImperTec', 'Manta aplicada (m²)'],
+    ],
     orcamento: [
       ['Código', 'Descrição', 'Unidade', 'Quantidade', 'Preço unitário', 'Custo unitário', 'Execução', 'Responsável', 'Início', 'Fim'],
       ['1.1', 'Mobilização e canteiro', 'vb', 1, 25000, 18000, 'Própria', 'Equipe João', '01/12/2026', '15/12/2026'],

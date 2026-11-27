@@ -188,3 +188,14 @@ th.ordenavel:hover { color: var(--brand); }
 .kpis4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 900px) { .kpis4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .kpis4 { grid-template-columns: 1fr; } }
+
+/* Mapa da fachada: prumadas (colunas) × pavimentos (linhas) */
+.mapa { display: grid; gap: 3px; min-width: max-content; }
+.mapa-canto, .mapa-pav { display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
+.mapa-cab { background: none; border: 1px solid var(--line); border-radius: 4px; font: inherit; font-size: .75rem; color: var(--muted); cursor: pointer; padding: 2px 0; }
+.mapa-cab:hover { color: var(--brand); border-color: var(--brand); }
+.pano { height: 24px; min-width: 30px; border: none; border-radius: 3px; background: #e8ecf0; cursor: pointer; padding: 0; }
+.pano:hover { outline: 2px solid var(--brand); }
+.pano.sel { background: #f47230; }
+.pano.feito { background: var(--brand); cursor: default; }
+.pano:focus-visible, .mapa-cab:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }

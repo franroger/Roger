@@ -2,6 +2,7 @@ import { addDias, hojeISO, uid } from './format';
 import type { DadosContrato, ItemOrcamento, Lancamento, Medicao, Obra } from './types';
 import { contratoVazio } from './types';
 import { gerarParcelas } from './contrato';
+import { apontamentoDeTrecho, locaisPadrao } from './producao';
 
 /** Obra de exemplo: reforma de fachada e impermeabilização, com datas relativas a hoje. */
 export function obraExemplo(): Obra {
@@ -128,5 +129,26 @@ export function obraExemplo(): Obra {
     clausulas: 'Andaimes e proteções por conta da contratada. Água e energia fornecidas pelo condomínio. ART de execução obrigatória.',
   };
   contrato.parcelas = gerarParcelas(obra, contrato);
-  return { ...obra, contrato };
+
+  // Fachadas (10 pavimentos) e produção do diário para as etapas de fachada.
+  const locais = locaisPadrao(10, 4200);
+  const ids = locais.map((l) => l.id);
+  const comLocais = itens.map((i) =>
+    ['2.1', '2.2', '4.2'].includes(i.codigo) ? { ...i, locais: ids } : i.codigo === '4.1' ? { ...i, locais: ids.slice(0, 2) } : i,
+  );
+  let parcial: Obra = { ...obra, itens: comLocais, locais, apontamentos: [] };
+  const registrar = (codigo: string, localIdx: number, dia: number, prumadas: number[], de: number, ate: number, equipe: string) => {
+    const item = parcial.itens.find((i) => i.codigo === codigo)!;
+    const r = apontamentoDeTrecho(parcial, item, locais[localIdx], d(dia), prumadas, de, ate, { equipe });
+    if (r.apontamento) parcial = { ...parcial, apontamentos: [...parcial.apontamentos!, r.apontamento] };
+  };
+  // Lavagem: todas as fachadas, uma prumada por vez
+  locais.forEach((l, li) => {
+    for (let p = 1; p <= l.prumadas; p++) registrar('2.1', li, 18 + li * 12 + p, [p], 10, 1, 'Equipe própria – lavagem');
+  });
+  // Pastilhas: começo da fachada frente
+  registrar('4.1', 0, 88, [1], 10, 7, 'Encarregado Marcos');
+  registrar('4.1', 0, 95, [2], 10, 7, 'Encarregado Marcos');
+
+  return { ...parcial, contrato };
 }

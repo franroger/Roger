@@ -11,11 +11,13 @@ import Orcamento from '../components/Orcamento';
 import Andamento from '../components/Andamento';
 import Financeiro from '../components/Financeiro';
 import Contrato from '../components/Contrato';
+import DiarioObra from '../components/DiarioObra';
 
 const ABAS = [
   ['painel', 'Painel e recomendações'],
   ['contrato', 'Contrato'],
   ['orcamento', 'Orçamento e cronograma'],
+  ['diario', 'Diário de obra'],
   ['andamento', 'Andamento'],
   ['financeiro', 'Financeiro'],
 ] as const;
@@ -82,6 +84,7 @@ export default function ObraDetalhe() {
       {aba === 'painel' && <Painel obra={obra} analise={analise} irPara={setAba} />}
       {aba === 'contrato' && <Contrato obra={obra} analise={analise} atualizar={atualizar} />}
       {aba === 'orcamento' && <Orcamento obra={obra} atualizar={atualizar} dataRef={dataRef} />}
+      {aba === 'diario' && <DiarioObra obra={obra} atualizar={atualizar} />}
       {aba === 'andamento' && <Andamento obra={obra} analise={analise} atualizar={atualizar} />}
       {aba === 'financeiro' && <Financeiro obra={obra} analise={analise} atualizar={atualizar} />}
 

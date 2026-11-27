@@ -50,7 +50,8 @@ export default function Andamento({ obra, analise, atualizar }: Props) {
           <div>
             <h2>Registrar andamento</h2>
             <div className="muted peq">
-              Informe o percentual <b>acumulado</b> executado de cada etapa (dos relatórios de campo). Deixe em branco as que não mudaram.
+              Informe o percentual <b>acumulado</b> executado de cada etapa. Deixe em branco as que não mudaram. Etapas com produção lançada na aba{' '}
+              <b>Diário de obra</b> são calculadas pela quantidade executada (vale o maior dos dois).
             </div>
           </div>
           <Importador

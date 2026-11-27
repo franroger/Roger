@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { baixarModelo, lerPlanilha, type TipoImportacao } from '../lib/importar';
 
 const TEXTO: Record<TipoImportacao, string> = {
+  diario: 'Colunas reconhecidas: Data, Etapa (código), Local (nome da fachada/área), Prumada (ex.: 3 ou 1-4), Pavimento inicial, Pavimento final, Quantidade, Equipe, Observação. Use o trecho (prumada + pavimentos) OU a quantidade.',
   orcamento: 'Colunas reconhecidas: Código, Descrição, Unidade, Quantidade, Preço unitário (ou Preço total), Custo unitário (ou Custo total), Execução (Própria / Terceirizada / Mista), Responsável, Início, Fim.',
   andamento: 'Colunas reconhecidas: Data, Código ou Etapa, % Acumulado, Observação. A etapa é localizada pelo código ou pela descrição da planilha orçamentária.',
   financeiro: 'Colunas reconhecidas: Data, Tipo (Despesa/Receita) — ou colunas separadas Entrada/Saída —, Etapa (código), Categoria, Descrição, Valor.',

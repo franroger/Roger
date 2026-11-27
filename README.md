@@ -8,6 +8,7 @@ Aplicativo web para acompanhar, **obra por obra**, o planejamento, o andamento f
 - **Cadastro da obra**: cliente, nº e valor do contrato, prazo (início/término) e situação.
 - **Contrato**: importação do contrato em **PDF, Word (.docx) ou texto**. O aplicativo identifica nº, contratante, valor, prazo, início, assinatura, adiantamento, retenção, multa por atraso e seu limite, prazo de pagamento, forma de medição, reajuste e garantia, e mostra o trecho de onde tirou cada informação para conferência. Inclui **cronograma de recebimentos (parcelas)**, gerado pelas condições de pagamento, com a situação de cada parcela (recebida, vencida, a vencer), e busca no texto do contrato. PDFs escaneados (imagem) não têm texto legível; nesse caso os dados são preenchidos à mão.
 - **Planilha orçamentária + cronograma**: cada etapa tem quantidade, preço de venda, custo previsto, **tipo de execução (equipe própria, terceirizado ou misto)**, responsável/empresa e período previsto. Telas de planilha, **Gantt** e **cronograma físico-financeiro mensal**.
+- **Diário de obra**: a obra é dividida em **locais** (cada fachada, cobertura, reservatório) e cada fachada em **panos** (prumada do balancim × pavimento). Cada etapa é ligada aos locais onde é executada e sua quantidade é distribuída pela área de cada local. A produção do dia é registrada clicando nos panos no **mapa da fachada**, informando o **trecho** ("prumada 3, do 12º ao 8º") ou a **quantidade** (m², m), ou importando o diário em Excel. O aplicativo converte em quantidade e % da etapa, sem contar o mesmo pano duas vezes.
 - **Andamento**: lançamento do % acumulado por etapa ou **importação dos relatórios de campo** (Excel/CSV).
 - **Financeiro**: despesas e receitas apropriadas às etapas, ou **importação da planilha de custos do Excel**. Inclui gasto x orçado por etapa e despesas por categoria.
 - **Painel e recomendações**:
@@ -41,6 +42,7 @@ Em cada aba há o botão **Baixar modelo** com as colunas esperadas. O importado
 |---|---|
 | Orçamento | Código, Descrição, Unidade, Quantidade, Preço unitário, Custo unitário, Execução, Responsável, Início, Fim |
 | Andamento | Data, Código/Etapa, % Acumulado, Observação |
+| Diário de obra | Data, Etapa (código), Local, Prumada, Pavimento inicial, Pavimento final **ou** Quantidade, Equipe, Observação |
 | Financeiro | Data, Tipo (Despesa/Receita) ou colunas Entrada/Saída, Etapa, Categoria, Descrição, Valor |
 
 ## Limitações desta versão

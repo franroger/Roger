@@ -27,6 +27,8 @@ export interface ItemOrcamento {
   responsavel: string;
   inicioPrevisto: string; // yyyy-mm-dd
   fimPrevisto: string; // yyyy-mm-dd
+  /** Locais onde a etapa é executada (a quantidade é dividida pela área de cada um). */
+  locais?: string[];
 }
 
 /** Registro de andamento: percentual físico acumulado de uma etapa numa data. */
@@ -68,6 +70,37 @@ export interface Obra {
   ultimaConclusao?: string;
   /** Dados e condições do contrato com o cliente. */
   contrato?: DadosContrato;
+  /** Fachadas e áreas da obra, divididas em panos (prumada × pavimento). */
+  locais?: Local[];
+  /** Produção registrada no diário de obra. */
+  apontamentos?: Apontamento[];
+}
+
+/**
+ * Local de execução: uma fachada, a cobertura, um reservatório...
+ * A fachada é dividida em panos: prumadas (descidas do balancim) × pavimentos.
+ */
+export interface Local {
+  id: string;
+  nome: string;
+  /** Área ou extensão total do local, na unidade das etapas (m², m). */
+  area: number;
+  pavimentos: number;
+  prumadas: number;
+}
+
+/** Registro de produção do diário de obra. */
+export interface Apontamento {
+  id: string;
+  data: string;
+  itemId: string;
+  localId?: string;
+  /** Quantidade executada, na unidade da etapa. */
+  quantidade: number;
+  /** Panos concluídos, no formato "prumada-pavimento" (ex.: "3-12"). */
+  panos?: string[];
+  equipe?: string;
+  observacao?: string;
 }
 
 export type Periodicidade = 'mensal' | 'quinzenal' | 'por_etapa' | 'outra';
