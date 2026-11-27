@@ -1,6 +1,7 @@
 import type { AnaliseObra } from './calc';
 import { diffDias, fmtData, fmtMoeda, fmtPct } from './format';
 import type { Obra } from './types';
+import { analisarContrato } from './contrato';
 
 export type Gravidade = 'critico' | 'atencao' | 'info' | 'ok';
 export type Area = 'planejamento' | 'financeiro' | 'controle';
@@ -197,6 +198,62 @@ export function gerarRecomendacoes(obra: Obra, a: AnaliseObra): Recomendacao[] {
       titulo: `${fmtMoeda(a.aReceber)} executado ainda não faturado/recebido`,
       detalhe: 'O avanço físico supera o que foi recebido do cliente.',
       acao: 'Emitir a próxima medição.',
+    });
+  }
+
+  // ---------- CONTRATO ----------
+  const c = obra.contrato;
+  if (c) {
+    const ac = analisarContrato(obra, a.data, a.diasAtrasoProjetado, a.medidoVenda);
+    if (ac.vencidoNaoRecebido > 0.5) {
+      const maisAntiga = ac.parcelas.find((x) => x.situacao === 'vencida');
+      r.push({
+        gravidade: 'critico',
+        area: 'financeiro',
+        titulo: `${ac.qtdVencidas} parcela(s) vencida(s) sem recebimento: ${fmtMoeda(ac.vencidoNaoRecebido)}`,
+        detalhe: maisAntiga
+          ? `A mais antiga, "${maisAntiga.parcela.descricao}", venceu em ${fmtData(maisAntiga.parcela.dataPrevista)} (${maisAntiga.diasAtraso} dias de atraso).`
+          : '',
+        acao: 'Cobrar o cliente e conferir se a medição foi aprovada e a nota emitida. Se o contrato prever, aplicar juros e correção.',
+      });
+    }
+    if (ac.multaEstimada > 0) {
+      r.push({
+        gravidade: 'critico',
+        area: 'planejamento',
+        titulo: `Risco de multa contratual de ${fmtMoeda(ac.multaEstimada)}`,
+        detalhe: `O contrato prevê multa de ${c.multaAtrasoPctDia}% ao dia${c.multaLimitePct ? ` (limite ${c.multaLimitePct}%)` : ''}. No ritmo atual o atraso projetado é de ${a.diasAtrasoProjetado} dias.`,
+        acao: 'Recuperar o prazo ou formalizar com o cliente um aditivo de prazo (chuvas, serviços extras, atrasos do cliente) antes do vencimento do contrato.',
+      });
+    }
+    if (c.prazoDias > 0 && obra.dataInicio && obra.dataFim) {
+      const restante = diffDias(a.data, obra.dataFim);
+      if (restante >= 0 && restante <= 30 && a.executado < 95) {
+        r.push({
+          gravidade: 'atencao',
+          area: 'planejamento',
+          titulo: `Faltam ${restante} dias para o fim do prazo contratual`,
+          detalhe: `Executado ${fmtPct(a.executado)}. Término do contrato em ${fmtData(obra.dataFim)}.`,
+          acao: 'Se não for possível concluir, solicitar prorrogação por escrito antes do vencimento.',
+        });
+      }
+    }
+    if (ac.retencaoAcumulada > 0) {
+      r.push({
+        gravidade: 'info',
+        area: 'financeiro',
+        titulo: `${fmtMoeda(ac.retencaoAcumulada)} retidos pelo cliente até agora (${c.retencaoPct}%)`,
+        detalhe: 'A retenção técnica só é devolvida no final da obra. Considere isso no caixa.',
+        acao: 'Controlar a devolução da retenção no recebimento definitivo da obra.',
+      });
+    }
+  } else if (emCurso) {
+    r.push({
+      gravidade: 'info',
+      area: 'controle',
+      titulo: 'Condições do contrato não cadastradas',
+      detalhe: 'Sem as parcelas e condições de pagamento não é possível alertar sobre recebimentos atrasados ou multas.',
+      acao: 'Na aba "Contrato", importe o arquivo do contrato ou preencha as condições.',
     });
   }
 

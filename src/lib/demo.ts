@@ -1,5 +1,7 @@
 import { addDias, hojeISO, uid } from './format';
-import type { ItemOrcamento, Lancamento, Medicao, Obra } from './types';
+import type { DadosContrato, ItemOrcamento, Lancamento, Medicao, Obra } from './types';
+import { contratoVazio } from './types';
+import { gerarParcelas } from './contrato';
 
 /** Obra de exemplo: reforma de fachada e impermeabilização, com datas relativas a hoje. */
 export function obraExemplo(): Obra {
@@ -93,7 +95,7 @@ export function obraExemplo(): Obra {
   rec(65, 'Medição 02', 70000);
   rec(95, 'Medição 03', 98000);
 
-  return {
+  const obra: Obra = {
     id: uid(),
     nome: 'Exemplo – Cond. Edifício Atlântico (fachada e impermeabilização)',
     cliente: 'Condomínio Edifício Atlântico',
@@ -109,4 +111,22 @@ export function obraExemplo(): Obra {
     lancamentos,
     criadoEm: hoje,
   };
+  const contrato: DadosContrato = {
+    ...contratoVazio(),
+    dataAssinatura: addDias(ini, -10),
+    prazoDias: 201,
+    adiantamentoPct: 10,
+    periodicidade: 'mensal',
+    prazoPagamentoDias: 15,
+    retencaoPct: 5,
+    multaAtrasoPctDia: 0.1,
+    multaLimitePct: 10,
+    reajuste: 'INCC-DI anual',
+    garantia: '5 anos',
+    condicoesPagamento:
+      'Adiantamento de 10% na assinatura, amortizado proporcionalmente nas medições. Medições mensais até o último dia do mês, pagas em 15 dias após a aprovação e emissão da nota fiscal. Retenção técnica de 5% de cada medição, devolvida no recebimento definitivo.',
+    clausulas: 'Andaimes e proteções por conta da contratada. Água e energia fornecidas pelo condomínio. ART de execução obrigatória.',
+  };
+  contrato.parcelas = gerarParcelas(obra, contrato);
+  return { ...obra, contrato };
 }

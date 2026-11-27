@@ -254,6 +254,10 @@ function fimDoMes(chave: string): string {
 function limitesObra(obra: Obra): [string, string] {
   let ini = obra.dataInicio;
   let fim = obra.dataFim;
+  for (const p of obra.contrato?.parcelas ?? []) {
+    if (p.dataPrevista && (!ini || p.dataPrevista < ini)) ini = p.dataPrevista;
+    if (p.dataPrevista && (!fim || p.dataPrevista > fim)) fim = p.dataPrevista;
+  }
   for (const i of obra.itens) {
     if (i.inicioPrevisto && (!ini || i.inicioPrevisto < ini)) ini = i.inicioPrevisto;
     if (i.fimPrevisto && (!fim || i.fimPrevisto > fim)) fim = i.fimPrevisto;
@@ -322,6 +326,7 @@ export function fluxoCaixa(obra: Obra): PontoFluxo[] {
   const fator = obra.valorContrato > 0 && totVenda > 0 ? obra.valorContrato / totVenda : 1;
   let acumulado = 0;
   let acumPrev = 0;
+  const parcelas = obra.contrato?.parcelas ?? [];
   return mesesEntre(ini, fim).map((mes) => {
     const doMes = obra.lancamentos.filter((l) => l.data.slice(0, 7) === mes);
     const receitas = doMes.filter((l) => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0);
@@ -335,6 +340,8 @@ export function fluxoCaixa(obra: Obra): PontoFluxo[] {
       custoPrev += frac * custoPrevisto(i);
       receitaPrev += frac * valorVenda(i) * fator;
     }
+    // Com parcelas cadastradas no contrato, a receita prevista segue as datas de pagamento.
+    if (parcelas.length) receitaPrev = parcelas.filter((p) => p.dataPrevista.slice(0, 7) === mes).reduce((s, p) => s + p.valor, 0);
     acumPrev += receitaPrev - custoPrev;
     return {
       mes,

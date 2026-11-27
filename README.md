@@ -6,6 +6,7 @@ Aplicativo web para acompanhar, **obra por obra**, o planejamento, o andamento f
 
 **Por obra**
 - **Cadastro da obra**: cliente, nº e valor do contrato, prazo (início/término) e situação.
+- **Contrato**: importação do contrato em **PDF, Word (.docx) ou texto**. O aplicativo identifica nº, contratante, valor, prazo, início, assinatura, adiantamento, retenção, multa por atraso e seu limite, prazo de pagamento, forma de medição, reajuste e garantia, e mostra o trecho de onde tirou cada informação para conferência. Inclui **cronograma de recebimentos (parcelas)**, gerado pelas condições de pagamento, com a situação de cada parcela (recebida, vencida, a vencer), e busca no texto do contrato. PDFs escaneados (imagem) não têm texto legível; nesse caso os dados são preenchidos à mão.
 - **Planilha orçamentária + cronograma**: cada etapa tem quantidade, preço de venda, custo previsto, **tipo de execução (equipe própria, terceirizado ou misto)**, responsável/empresa e período previsto. Telas de planilha, **Gantt** e **cronograma físico-financeiro mensal**.
 - **Andamento**: lançamento do % acumulado por etapa ou **importação dos relatórios de campo** (Excel/CSV).
 - **Financeiro**: despesas e receitas apropriadas às etapas, ou **importação da planilha de custos do Excel**. Inclui gasto x orçado por etapa e despesas por categoria.
@@ -25,6 +26,7 @@ npm install
 npm run dev      # abre em http://localhost:5173
 npm test         # testes dos cálculos
 npm run build    # gera a pasta dist/ (site estático, pode ser hospedado em qualquer servidor)
+npm run build:pagina  # gera dist-pagina/gestao-obras.html (app inteiro em um arquivo)
 ```
 
 Na primeira abertura, clique em **"Carregar obra de exemplo"** para ver o aplicativo com dados.

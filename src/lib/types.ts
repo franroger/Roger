@@ -66,6 +66,64 @@ export interface Obra {
   criadoEm: string;
   /** Data em que a obra atingiu 100% (opcional). */
   ultimaConclusao?: string;
+  /** Dados e condições do contrato com o cliente. */
+  contrato?: DadosContrato;
+}
+
+export type Periodicidade = 'mensal' | 'quinzenal' | 'por_etapa' | 'outra';
+
+/** Parcela prevista de recebimento do cliente. */
+export interface Parcela {
+  id: string;
+  descricao: string;
+  dataPrevista: string;
+  valor: number;
+}
+
+export interface DadosContrato {
+  dataAssinatura: string;
+  prazoDias: number;
+  tipoPrazo: 'corridos' | 'uteis';
+  adiantamentoPct: number;
+  periodicidade: Periodicidade;
+  /** Dias para o cliente pagar após a medição/nota. */
+  prazoPagamentoDias: number;
+  retencaoPct: number;
+  multaAtrasoPctDia: number;
+  multaLimitePct: number;
+  reajuste: string;
+  garantia: string;
+  condicoesPagamento: string;
+  clausulas: string;
+  parcelas: Parcela[];
+  textoContrato?: string;
+  nomeArquivo?: string;
+}
+
+export const ROTULO_PERIODICIDADE: Record<Periodicidade, string> = {
+  mensal: 'Medição mensal',
+  quinzenal: 'Medição quinzenal',
+  por_etapa: 'Por etapa concluída',
+  outra: 'Outra (ver condições)',
+};
+
+export function contratoVazio(): DadosContrato {
+  return {
+    dataAssinatura: '',
+    prazoDias: 0,
+    tipoPrazo: 'corridos',
+    adiantamentoPct: 0,
+    periodicidade: 'mensal',
+    prazoPagamentoDias: 30,
+    retencaoPct: 0,
+    multaAtrasoPctDia: 0,
+    multaLimitePct: 10,
+    reajuste: '',
+    garantia: '',
+    condicoesPagamento: '',
+    clausulas: '',
+    parcelas: [],
+  };
 }
 
 export interface BancoDados {
