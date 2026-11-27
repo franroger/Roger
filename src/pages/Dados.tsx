@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../lib/store';
-import { obraExemplo } from '../lib/demo';
+import { obrasExemplo } from '../lib/demoCarteira';
 import { hojeISO } from '../lib/format';
 import type { BancoDados } from '../lib/types';
 
@@ -44,11 +44,11 @@ export default function Dados() {
           <button
             className="btn sec"
             onClick={() => {
-              salvarObra(obraExemplo());
-              setMsg('Obra de exemplo adicionada.');
+              obrasExemplo().forEach(salvarObra);
+              setMsg('Obras de exemplo adicionadas.');
             }}
           >
-            Adicionar obra de exemplo
+            Adicionar obras de exemplo
           </button>
           <input
             ref={ref}

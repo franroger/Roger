@@ -174,3 +174,17 @@ td input, td select { padding: .25rem .35rem; min-width: 70px; }
   .gantt .g-linha, .gantt .g-meses { grid-template-columns: 150px 1fr; }
   .kpi .val { font-size: 1.15rem; }
 }
+
+/* Elementos clicáveis do painel */
+.linha-clicavel { cursor: pointer; }
+.linha-clicavel:hover td { background: var(--brand-soft); }
+.lista-clicavel { display: flex; flex-direction: column; gap: .5rem; }
+.lista-clicavel .rec { margin: 0; }
+button.rec.clicavel { display: block; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+button.rec.clicavel:hover { background: var(--brand-soft); }
+button.rec.clicavel:focus-visible, .linha-clicavel:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+th.ordenavel { cursor: pointer; user-select: none; white-space: nowrap; }
+th.ordenavel:hover { color: var(--brand); }
+.kpis4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .kpis4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .kpis4 { grid-template-columns: 1fr; } }

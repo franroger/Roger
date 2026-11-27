@@ -1,5 +1,5 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
-import ListaObras from './pages/ListaObras';
+import PainelGeral from './pages/PainelGeral';
 import ObraDetalhe from './pages/ObraDetalhe';
 import Dados from './pages/Dados';
 
@@ -10,17 +10,17 @@ export default function App() {
         <span className="marca">Gestão de Obras</span>
         <nav>
           <NavLink to="/" end>
-            Obras
+            Painel das obras
           </NavLink>
           <NavLink to="/dados">Backup e dados</NavLink>
         </nav>
       </header>
       <main>
         <Routes>
-          <Route path="/" element={<ListaObras />} />
+          <Route path="/" element={<PainelGeral />} />
           <Route path="/obra/:id" element={<ObraDetalhe />} />
           <Route path="/dados" element={<Dados />} />
-          <Route path="*" element={<ListaObras />} />
+          <Route path="*" element={<PainelGeral />} />
         </Routes>
       </main>
     </>

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { BancoDados, Obra } from './types';
 import { hojeISO, uid } from './format';
-import { obraExemplo } from './demo';
+import { obrasExemplo } from './demoCarteira';
 
 const CHAVE = 'gestao-obras:v1';
 
@@ -16,7 +16,7 @@ function carregar(): BancoDados {
     /* armazenamento indisponível */
   }
   // Na versão publicada como página, quem abre pela primeira vez já vê uma obra de exemplo.
-  return { versao: 1, obras: import.meta.env.VITE_MODO === 'pagina' ? [obraExemplo()] : [] };
+  return { versao: 1, obras: import.meta.env.VITE_MODO === 'pagina' ? obrasExemplo() : [] };
 }
 
 export function novaObraVazia(): Obra {

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../lib/store';
 import { analisarObra } from '../lib/calc';
 import { fmtData, fmtMoeda, hojeISO } from '../lib/format';
@@ -25,7 +25,8 @@ export default function ObraDetalhe() {
   const { id = '' } = useParams();
   const { obter, salvarObra, excluirObra, atualizarObra } = useStore();
   const obra = obter(id);
-  const [aba, setAba] = useState<Aba>('painel');
+  const local = useLocation();
+  const [aba, setAba] = useState<Aba>(((local.state as { aba?: Aba } | null)?.aba) ?? 'painel');
   const [editando, setEditando] = useState(false);
   const [dataRef, setDataRef] = useState(hojeISO());
   const navegar = useNavigate();
@@ -45,7 +46,7 @@ export default function ObraDetalhe() {
   return (
     <>
       <div className="peq" style={{ marginBottom: '.5rem' }}>
-        <Link to="/">← Obras</Link>
+        <Link to="/">← Painel das obras</Link>
       </div>
       <div className="card">
         <div className="linha entre" style={{ alignItems: 'flex-start' }}>

@@ -17,7 +17,9 @@ Aplicativo web para acompanhar, **obra por obra**, o planejamento, o andamento f
   - comparação entre equipe própria e terceirizados;
   - **recomendações automáticas** de planejamento e financeiro (etapas atrasadas, etapas que vão estourar o orçamento, medição a cobrar, despesas sem etapa etc.).
 
-**Geral**: visão consolidada da carteira, backup e restauração dos dados.
+**Painel das obras (página inicial)**: visão de todas as obras juntas, com indicadores da carteira (valor dos contratos, avanço físico, encontro de contas, parcelas vencidas, margem prevista x projetada, risco de multas), alertas prioritários, recebimentos vencidos e dos próximos 45 dias, tabela de obras ordenável, gráficos de avanço e margem por obra e fluxo de caixa consolidado. Clicar em uma obra, alerta ou parcela abre a obra na aba correspondente.
+
+**Backup e dados**: exportação e restauração dos dados.
 
 ## Como rodar
 
