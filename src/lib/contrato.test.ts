@@ -52,3 +52,48 @@ describe('parcelas', () => {
     expect(ac.recebido).toBeGreaterThan(0);
   });
 });
+
+describe('contrato com sinal e parcelas fixas', () => {
+  const T = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+EMPRESA X LTDA, inscrita no CNPJ sob o nr. 00.000.000/0001-00, denominada CONTRATADA, e o CONDOMÍNIO DO EDIFÍCIO EXEMPLO, inscrito no CNPJ sob o nº
+00.000.000/0001-00, localizado á Rua Y, 10 – Recife/PE, denominado como
+CONTRATANTE, representado por sua Síndica.
+4.1 - Conforme proposta Comercial apresentada , o prazo para execução dos serviços é estimado de 10 meses.
+5.1 - O valor acordado para os presentes serviços importam no valor de R$ 533.000,00 (Quinhentos e Trinta e Três Mil Reais.)
+5.2 – O Pagamento será seguinte forma:
+Autorização : SINAL DE R$ 70.000,00 (Setenta Mil Reais) - Representando 13% do valor da Proposta
+O Saldo será pago em 20 parcelas consecutivas de R$ 23.150,00(Vinte e Três mil , Cento e Cinquenta
+Reais), a serem pagas dia 15 de cada mês, mediante apresentação da nota fiscal.
+d) Pelo atraso na obra, sem justificativa técnica, por culpa do Contratado: multa de 2% (dois por cento) do valor do
+contrato, acrescidos de 1% para cada mês de atraso.
+7.2 -As multas estabelecidas podem ser aplicadas isoladas ou cumulativamente, ficando o seu total limitado a 10% (dez por cento) do valor contratado.
+Recife , 30 de Março de 2026`;
+  it('identifica sinal, parcelas, dia, multa fixa e mensal', () => {
+    const d = Object.fromEntries(identificarDados(T).map((a) => [a.campo, a.valor]));
+    expect(d).toMatchObject({
+      cliente: 'CONDOMÍNIO DO EDIFÍCIO EXEMPLO',
+      valorContrato: 533000,
+      prazoDias: 300,
+      sinalValor: 70000,
+      adiantamentoPct: 13,
+      parcelasQtd: 20,
+      parcelaValor: 23150,
+      diaPagamento: 15,
+      periodicidade: 'parcelas_fixas',
+      multaFixaPct: 2,
+      multaLimitePct: 10,
+      dataAssinatura: '2026-03-30',
+    });
+    expect(d.multaAtrasoPctDia).toBeCloseTo(1 / 30);
+  });
+  it('gera sinal + 20 parcelas no dia 15', () => {
+    const o = obraExemplo();
+    const ps = gerarParcelas({ ...o, dataInicio: '2026-05-01', valorContrato: 533000 }, {
+      ...o.contrato!, periodicidade: 'parcelas_fixas', dataAssinatura: '2026-03-30', sinalValor: 70000, parcelasQtd: 20, parcelaValor: 23150, diaPagamento: 15,
+    });
+    expect(ps).toHaveLength(21);
+    expect(ps[1].dataPrevista).toBe('2026-05-15');
+    expect(ps[20].dataPrevista).toBe('2027-12-15');
+    expect(ps.reduce((s, p) => s + p.valor, 0)).toBeCloseTo(533000);
+  });
+});

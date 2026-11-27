@@ -20,7 +20,7 @@ Aplicativo web para acompanhar, **obra por obra**, o planejamento, o andamento f
 
 **Painel das obras (página inicial)**: visão de todas as obras juntas, com indicadores da carteira (valor dos contratos, avanço físico, encontro de contas, parcelas vencidas, margem prevista x projetada, risco de multas), alertas prioritários, recebimentos vencidos e dos próximos 45 dias, tabela de obras ordenável, gráficos de avanço e margem por obra e fluxo de caixa consolidado. Clicar em uma obra, alerta ou parcela abre a obra na aba correspondente.
 
-**Backup e dados**: exportação e restauração dos dados.
+**Backup e dados**: exportação e restauração dos dados, e **Adicionar obra de arquivo** (acrescenta uma obra pronta, em .json, sem apagar as existentes).
 
 ## Como rodar
 
@@ -57,6 +57,10 @@ Há dois modelos em Excel para a equipe de campo, ambos lidos pelo aplicativo (o
 Os dois têm as abas **Instruções**, **Produção** (uma linha por serviço: data, etapa, local, fase, medição, equipe, observação), **Dias** (clima, condição do dia, efetivo, horas paradas, motivo, ocorrências) e **Cadastro** (etapas, fases com peso e locais da obra, que viram listas de escolha).
 
 No aplicativo, cada etapa pode ter **fases com peso** (ex.: impermeabilização = regularização 20%, primer 10%, manta 60%, teste de estanqueidade 10%) e os locais podem ser **fachadas** (com mapa de panos) ou **áreas/ambientes**. O **quadro de avanço por local e fase** mostra o andamento de cada etapa e permite lançar a produção com um clique. Os modelos são gerados por `python3 scripts/gerar_rdo.py modelos`.
+
+Fachadas com balancins de larguras diferentes: cada local pode guardar a **largura de cada prumada/balancim**; o pano de um balancim de 6,20 m vale proporcionalmente mais que o de um de 2,20 m.
+
+Contratos com **sinal + parcelas mensais fixas** (ex.: sinal de R$ 70.000 + 20 × R$ 23.150 no dia 15) e multa por atraso **fixa + mensal** (ex.: 2% + 1% ao mês, limitada a 10%) são reconhecidos na importação do contrato e geram o cronograma de recebimentos.
 
 ### RDO do Mais Controle
 

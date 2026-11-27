@@ -135,7 +135,7 @@ export default function Contrato({ obra, analise: a, atualizar }: Props) {
         <Kpi
           rotulo="Risco de multa por atraso"
           valor={fmtMoeda(ac.multaEstimada)}
-          sub={c.multaAtrasoPctDia ? `${fmtNum(c.multaAtrasoPctDia)}% ao dia · atraso projetado ${Math.max(0, a.diasAtrasoProjetado)} dias` : 'Multa não informada'}
+          sub={c.multaAtrasoPctDia || c.multaFixaPct ? `${c.multaFixaPct ? `${fmtNum(c.multaFixaPct)}% + ` : ''}${fmtNum(c.multaAtrasoPctDia)}% ao dia · atraso projetado ${Math.max(0, a.diasAtrasoProjetado)} dias` : 'Multa não informada'}
           tom={ac.multaEstimada > 0 ? 'critico' : 'ok'}
         />
       </div>
@@ -290,6 +290,30 @@ export default function Contrato({ obra, analise: a, atualizar }: Props) {
             Limite da multa
             <CampoNumero id="ct-multalim" valor={c.multaLimitePct} aoMudar={(n) => setC({ multaLimitePct: n })} sufixo="% do contrato" />
           </label>
+          <label className="campo">
+            Multa fixa por atraso
+            <CampoNumero id="ct-multafixa" valor={c.multaFixaPct ?? 0} aoMudar={(n) => setC({ multaFixaPct: n })} sufixo="% do contrato" />
+          </label>
+          {c.periodicidade === 'parcelas_fixas' && (
+            <>
+              <label className="campo">
+                Sinal (R$)
+                <CampoNumero id="ct-sinal" valor={c.sinalValor ?? 0} moeda aoMudar={(n) => setC({ sinalValor: n })} />
+              </label>
+              <label className="campo">
+                Nº de parcelas
+                <CampoNumero id="ct-nparc" valor={c.parcelasQtd ?? 0} aoMudar={(n) => setC({ parcelasQtd: Math.round(n) })} />
+              </label>
+              <label className="campo">
+                Valor de cada parcela (R$)
+                <CampoNumero id="ct-vparc" valor={c.parcelaValor ?? 0} moeda aoMudar={(n) => setC({ parcelaValor: n })} />
+              </label>
+              <label className="campo">
+                Dia do pagamento
+                <CampoNumero id="ct-dia" valor={c.diaPagamento ?? 15} aoMudar={(n) => setC({ diaPagamento: Math.round(n) })} />
+              </label>
+            </>
+          )}
           <label className="campo">
             Reajuste
             <input id="ct-reajuste" value={c.reajuste} placeholder="Ex.: INCC anual" onChange={(e) => setC({ reajuste: e.target.value })} />

@@ -121,6 +121,8 @@ export interface Local {
   area: number;
   pavimentos: number;
   prumadas: number;
+  /** Largura de cada prumada/balancim (m), na ordem da numeração. Sem isso, todas iguais. */
+  larguras?: number[];
 }
 
 /** Registro de produção do diário de obra. */
@@ -141,7 +143,7 @@ export interface Apontamento {
   observacao?: string;
 }
 
-export type Periodicidade = 'mensal' | 'quinzenal' | 'por_etapa' | 'outra';
+export type Periodicidade = 'mensal' | 'quinzenal' | 'por_etapa' | 'parcelas_fixas' | 'outra';
 
 /** Parcela prevista de recebimento do cliente. */
 export interface Parcela {
@@ -162,6 +164,13 @@ export interface DadosContrato {
   retencaoPct: number;
   multaAtrasoPctDia: number;
   multaLimitePct: number;
+  /** Parte fixa da multa por atraso (% do contrato), aplicada quando há atraso. */
+  multaFixaPct?: number;
+  /** Pagamento em parcelas fixas: sinal + N parcelas iguais num dia do mês. */
+  sinalValor?: number;
+  parcelasQtd?: number;
+  parcelaValor?: number;
+  diaPagamento?: number;
   reajuste: string;
   garantia: string;
   condicoesPagamento: string;
@@ -175,6 +184,7 @@ export const ROTULO_PERIODICIDADE: Record<Periodicidade, string> = {
   mensal: 'Medição mensal',
   quinzenal: 'Medição quinzenal',
   por_etapa: 'Por etapa concluída',
+  parcelas_fixas: 'Sinal + parcelas mensais fixas',
   outra: 'Outra (ver condições)',
 };
 

@@ -14,6 +14,7 @@ import {
   locaisPadrao,
   panosExecutados,
   pavimentosDeCima,
+  qtdDosPanos,
   qtdPorPano,
   quantidadeExecutada,
   quantidadePorLocal,
@@ -186,7 +187,7 @@ export default function DiarioObra({ obra, atualizar }: Props) {
                       <td className="num">
                         {fach ? <Num id={`loc-pru-${l.id}`} largura={60} valor={l.prumadas} aoMudar={(n) => mudar({ prumadas: Math.max(1, Math.round(n)) })} /> : <span className="muted">—</span>}
                       </td>
-                      <td className="num">{fach ? fmtNum(l.area / panos) : <span className="muted">—</span>}</td>
+                      <td className="num">{fach ? (l.larguras?.length ? <span title="Balancins de larguras diferentes">varia</span> : fmtNum(l.area / panos)) : <span className="muted">—</span>}</td>
                       <td>
                         <BotaoConfirmar className="btn perigo mini" confirmar="Excluir?" aoConfirmar={() => setLocais((ls) => ls.filter((x) => x.id !== l.id))} title="Excluir local">
                           ✕
@@ -676,9 +677,9 @@ function MapaFachada({ obra, hoje, addApontamentos }: { obra: Obra; hoje: string
     if (!selecao.size) return;
     const panos = [...selecao];
     addApontamentos([
-      { id: uid(), data: dataReg, itemId: item.id, localId: local.id, fase: fase || undefined, quantidade: panos.length * porPano, panos, equipe: equipe || undefined },
+      { id: uid(), data: dataReg, itemId: item.id, localId: local.id, fase: fase || undefined, quantidade: qtdDosPanos(obra, item, local, panos), panos, equipe: equipe || undefined },
     ]);
-    setMsg(`${panos.length} pano(s) registrados: ${fmtNum(panos.length * porPano)} ${item.unidade}${fase ? ` (${fase})` : ''} em ${fmtData(dataReg)}.`);
+    setMsg(`${panos.length} pano(s) registrados: ${fmtNum(qtdDosPanos(obra, item, local, panos))} ${item.unidade}${fase ? ` (${fase})` : ''} em ${fmtData(dataReg)}.`);
     limpar();
   };
 
@@ -721,7 +722,7 @@ function MapaFachada({ obra, hoje, addApontamentos }: { obra: Obra; hoje: string
       </div>
       <div className="peq" style={{ marginBottom: '.5rem' }}>
         <b>{local.nome}</b>
-        {fase && ` · ${fase}`}: {feitos.size} de {total} panos ({fmtPct((feitos.size / total) * 100, 0)}) · cada pano = {fmtNum(porPano)} {item.unidade}.{' '}
+        {fase && ` · ${fase}`}: {feitos.size} de {total} panos ({fmtPct((feitos.size / total) * 100, 0)}) · {local.larguras?.length ? 'pano médio' : 'cada pano'} = {fmtNum(porPano)} {item.unidade}.{' '}
         <b>Etapa inteira: {fmtPct(executadoItem(obra, item.id, hoje))}</b>
       </div>
       <div className="legenda" style={{ marginBottom: '.5rem' }}>
@@ -733,8 +734,15 @@ function MapaFachada({ obra, hoje, addApontamentos }: { obra: Obra; hoje: string
         <div className="mapa" style={{ gridTemplateColumns: `44px repeat(${local.prumadas}, minmax(30px, 1fr))` }} role="grid" aria-label={`Mapa de ${local.nome}`}>
           <div className="mapa-canto peq muted">Pav.</div>
           {Array.from({ length: local.prumadas }, (_, k) => (
-            <button key={k} type="button" className="mapa-cab" onClick={() => selecionarPrumada(k + 1)} title="Selecionar a prumada inteira">
+            <button
+              key={k}
+              type="button"
+              className="mapa-cab"
+              onClick={() => selecionarPrumada(k + 1)}
+              title={`Selecionar a prumada ${k + 1} inteira${local.larguras?.[k] ? ` (balancim de ${fmtNum(local.larguras[k])} m)` : ''}`}
+            >
               P{k + 1}
+              {local.larguras?.[k] ? <span className="mapa-larg">{fmtNum(local.larguras[k])}</span> : null}
             </button>
           ))}
           {pavimentosDeCima(local).map((pv) => (
@@ -770,7 +778,7 @@ function MapaFachada({ obra, hoje, addApontamentos }: { obra: Obra; hoje: string
         </label>
         <div className="campo" style={{ justifyContent: 'flex-end' }}>
           <button className="btn" disabled={!selecao.size} onClick={registrar}>
-            Registrar {selecao.size || ''} pano(s){selecao.size ? ` = ${fmtNum(selecao.size * porPano)} ${item.unidade}` : ''}
+            Registrar {selecao.size || ''} pano(s){selecao.size ? ` = ${fmtNum(qtdDosPanos(obra, item, local, [...selecao]))} ${item.unidade}` : ''}
           </button>
         </div>
         {selecao.size > 0 && (

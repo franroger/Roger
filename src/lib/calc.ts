@@ -165,7 +165,7 @@ export function analisarObra(obra: Obra, data: string = hojeISO()): AnaliseObra 
 
   const ev = itens.reduce((s, a) => s + a.valorAgregado, 0);
   const gastoEtapas = itens.reduce((s, a) => s + a.gasto, 0);
-  const cpi = gastoEtapas > 0 ? ev / gastoEtapas : null;
+  const cpi = gastoEtapas > 0 && custoPrevistoTotal > 0 ? ev / gastoEtapas : null;
   const spi = planejado > 0 ? executado / planejado : null;
 
   // Despesas sem etapa (indiretas) são projetadas proporcionalmente ao avanço físico.

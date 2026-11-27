@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../lib/store';
 import { obrasExemplo } from '../lib/demoCarteira';
-import { hojeISO } from '../lib/format';
-import type { BancoDados } from '../lib/types';
+import { hojeISO, uid } from '../lib/format';
+import type { BancoDados, Obra } from '../lib/types';
 
 export default function Dados() {
   const { exportar, substituirTudo, salvarObra, obras } = useStore();
   const ref = useRef<HTMLInputElement>(null);
+  const refObra = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState('');
   const [pendente, setPendente] = useState<BancoDados | null>(null);
 
@@ -41,6 +42,30 @@ export default function Dados() {
           <button className="btn sec" onClick={() => ref.current?.click()}>
             Restaurar backup
           </button>
+          <button className="btn sec" onClick={() => refObra.current?.click()} title="Acrescenta a(s) obra(s) do arquivo sem apagar as que já existem">
+            Adicionar obra de arquivo
+          </button>
+          <input
+            ref={refObra}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (!f) return;
+              try {
+                const dados = JSON.parse(await f.text());
+                const lista: Obra[] = Array.isArray(dados?.obras) ? dados.obras : dados?.itens ? [dados] : [];
+                if (!lista.length) throw new Error('o arquivo não contém obras');
+                // novo id para não colidir com obras existentes
+                lista.forEach((o) => salvarObra({ ...o, id: uid(), medicoes: o.medicoes ?? [], lancamentos: o.lancamentos ?? [] }));
+                setMsg(`${lista.length} obra(s) adicionada(s): ${lista.map((o) => o.nome).join(', ')}.`);
+              } catch (err) {
+                setMsg(`Arquivo inválido: ${(err as Error).message}`);
+              }
+            }}
+          />
           <button
             className="btn sec"
             onClick={() => {

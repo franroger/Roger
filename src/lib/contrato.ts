@@ -50,8 +50,8 @@ export function analisarContrato(obra: Obra, data: string, diasAtrasoProjetado: 
   const vencidas = analisadas.filter((x) => x.situacao === 'vencida');
   const valorContrato = obra.valorContrato || obra.itens.reduce((s, i) => s + valorVenda(i), 0);
   let multa = 0;
-  if (c && c.multaAtrasoPctDia > 0 && diasAtrasoProjetado > 0) {
-    const pct = Math.min(c.multaAtrasoPctDia * diasAtrasoProjetado, c.multaLimitePct > 0 ? c.multaLimitePct : Infinity);
+  if (c && (c.multaAtrasoPctDia > 0 || (c.multaFixaPct ?? 0) > 0) && diasAtrasoProjetado > 0) {
+    const pct = Math.min((c.multaFixaPct ?? 0) + c.multaAtrasoPctDia * diasAtrasoProjetado, c.multaLimitePct > 0 ? c.multaLimitePct : Infinity);
     multa = (valorContrato * pct) / 100;
   }
   return {
@@ -76,6 +76,23 @@ export function gerarParcelas(obra: Obra, c: DadosContrato): Parcela[] {
   const totVenda = obra.itens.reduce((s, i) => s + valorVenda(i), 0);
   const fator = totVenda > 0 ? valorContrato / totVenda : 1;
   const out: Parcela[] = [];
+  if (c.periodicidade === 'parcelas_fixas') {
+    // Sinal na assinatura + N parcelas iguais no dia combinado, a partir do mês do início da obra
+    const sinal = c.sinalValor ?? (valorContrato * c.adiantamentoPct) / 100;
+    if (sinal > 0) out.push({ id: uid(), descricao: 'Sinal', dataPrevista: c.dataAssinatura || obra.dataInicio, valor: sinal });
+    const n = c.parcelasQtd ?? 0;
+    const valor = c.parcelaValor ?? (n > 0 ? (valorContrato - sinal) / n : 0);
+    const dia = Math.min(28, Math.max(1, c.diaPagamento ?? 15));
+    const ini = obra.dataInicio || c.dataAssinatura;
+    let [a, m] = ini.split('-').map(Number);
+    if (Number(ini.slice(8, 10)) > dia) m++; // dia já passou no mês de início
+    for (let k = 1; k <= n; k++) {
+      while (m > 12) (m -= 12), a++;
+      out.push({ id: uid(), descricao: `Parcela ${String(k).padStart(2, '0')}/${n}`, dataPrevista: `${a}-${String(m).padStart(2, '0')}-${String(dia).padStart(2, '0')}`, valor });
+      m++;
+    }
+    return out.map((p) => ({ ...p, valor: Math.round(p.valor * 100) / 100 }));
+  }
   const adiant = (valorContrato * c.adiantamentoPct) / 100;
   if (adiant > 0) {
     out.push({ id: uid(), descricao: `Adiantamento (${c.adiantamentoPct}%)`, dataPrevista: c.dataAssinatura || obra.dataInicio, valor: adiant });
@@ -194,7 +211,12 @@ export type CampoExtraido =
   | 'prazoPagamentoDias'
   | 'periodicidade'
   | 'reajuste'
-  | 'garantia';
+  | 'garantia'
+  | 'sinalValor'
+  | 'parcelasQtd'
+  | 'parcelaValor'
+  | 'diaPagamento'
+  | 'multaFixaPct';
 
 export interface Achado {
   campo: CampoExtraido;
@@ -258,6 +280,10 @@ export function identificarDados(texto: string): Achado[] {
     add('numeroContrato', 'Nº do contrato', m[1], m[1], m.index, m[0].length),
   );
 
+  // "... e o CONDOMÍNIO X, inscrito no CNPJ ..., denominado como CONTRATANTE"
+  busca(/\be\s+(?:o|a)\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9 .ºª-]{5,90}),[\s\S]{0,300}?denominad[oa]\s+(?:como\s+)?CONTRATANTE/, (m) =>
+    add('cliente', 'Contratante (cliente)', m[1].trim(), m[1].trim(), m.index, m[0].length),
+  );
   busca(/CONTRATANTE\s*[:,-]?\s*(?:o|a)?\s*([A-ZÁÉÍÓÚÂÊÔÃÕÇ][^\n,;]{3,90})/, (m) => {
     const nome = m[1].replace(/\s+/g, ' ').replace(/,?\s*(pessoa jur[ií]dica|inscrit[oa]|com sede|CNPJ).*$/i, '').trim();
     if (nome.length > 3) add('cliente', 'Contratante (cliente)', nome, nome, m.index, m[0].length);
@@ -306,7 +332,26 @@ export function identificarDados(texto: string): Achado[] {
       add(campo, rotulo, num(m[1]), `${m[1]}%`, m.index, m[0].length),
     );
   };
+  // Sinal em R$ (ex.: "SINAL DE R$ 70.000,00 ... 13%")
+  busca(new RegExp(String.raw`(?:sinal|entrada|adiantamento)\s+(?:de\s+)?` + MOEDA_RE + String.raw`[^%]{0,90}?(\d{1,2}(?:[.,]\d+)?)\s*%`, 'i'), (m) => {
+    add('sinalValor', 'Sinal (valor)', num(m[1]), `R$ ${m[1]}`, m.index, m[0].length);
+    add('adiantamentoPct', 'Adiantamento / sinal', num(m[2]), `${m[2]}%`, m.index, m[0].length);
+  });
+  busca(new RegExp(String.raw`(?:sinal|entrada)\s+(?:de\s+)?` + MOEDA_RE, 'i'), (m) => add('sinalValor', 'Sinal (valor)', num(m[1]), `R$ ${m[1]}`, m.index, m[0].length));
   pctPerto('adiantamento|sinal|entrada|antecipa[çc][ãa]o', 'adiantamentoPct', 'Adiantamento / sinal');
+  // Parcelas fixas: "20 parcelas consecutivas de R$ 23.150,00 ... dia 15 de cada mês"
+  busca(new RegExp(String.raw`(\d{1,3})\s*(?:\([^)]{2,30}\)\s*)?parcelas\s+(?:mensais\s+|iguais\s+|consecutivas\s+|sucessivas\s+)*(?:e\s+\w+\s+)?de\s+` + MOEDA_RE, 'i'), (m) => {
+    add('parcelasQtd', 'Número de parcelas', Number(m[1]), `${m[1]} parcelas`, m.index, m[0].length);
+    add('parcelaValor', 'Valor de cada parcela', num(m[2]), `R$ ${m[2]}`, m.index, m[0].length);
+  });
+  busca(/(?:pag[ao]s?|vencimento)[^.\n]{0,40}?\bdia\s+(\d{1,2})\s+de\s+cada\s+m[eê]s/i, (m) =>
+    add('diaPagamento', 'Dia do pagamento', Number(m[1]), `dia ${m[1]}`, m.index, m[0].length),
+  );
+  // Multa por atraso: "2% do valor do contrato, acrescidos de 1% para cada mês de atraso"
+  busca(/atraso[^.]{0,160}?multa\s+de\s+(\d{1,2}(?:[.,]\d+)?)\s*%[^.]{0,120}?acrescid\w*\s+de\s+(\d{1,2}(?:[.,]\d+)?)\s*%\s*(?:para\s+cada|por)\s+m[eê]s/i, (m) => {
+    add('multaFixaPct', 'Multa fixa por atraso', num(m[1]), `${m[1]}% do contrato`, m.index, m[0].length);
+    add('multaAtrasoPctDia', 'Multa por atraso (por dia)', num(m[2]) / 30, `${m[2]}% ao mês (≈ ${(num(m[2]) / 30).toFixed(3).replace('.', ',')}% ao dia)`, m.index, m[0].length);
+  });
   pctPerto('reten[çc][ãa]o|retid[oa]|cau[çc][ãa]o', 'retencaoPct', 'Retenção técnica / caução');
 
   busca(/multa[^.\n]{0,120}?(\d{1,2}(?:[.,]\d+)?)\s*%[^.\n]{0,60}?(?:por\s+dia|ao\s+dia|di[áa]ri[oa])/i, (m) =>
@@ -340,6 +385,10 @@ export function identificarDados(texto: string): Achado[] {
     add('garantia', 'Garantia dos serviços', `${m[1]} ${m[2]}`, `${m[1]} ${m[2]}`, m.index, m[0].length),
   );
 
+  if (achados.some((a) => a.campo === 'parcelasQtd') && !achados.some((a) => a.campo === 'periodicidade')) {
+    const p = achados.find((a) => a.campo === 'parcelasQtd')!;
+    achados.push({ campo: 'periodicidade', rotulo: 'Forma de pagamento', valor: 'parcelas_fixas', exibicao: 'sinal + parcelas mensais fixas', trecho: p.trecho });
+  }
   return achados;
 }
 

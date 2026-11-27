@@ -206,3 +206,4 @@ th.ordenavel:hover { color: var(--brand); }
 .celula-avanco { width: 100%; min-width: 64px; border: none; border-radius: 4px; padding: .35rem .25rem; font: inherit; font-size: .85rem; font-variant-numeric: tabular-nums; cursor: pointer; }
 .celula-avanco:hover { outline: 2px solid var(--brand); }
 .celula-avanco:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.mapa-larg { display: block; font-size: .65rem; color: var(--muted); line-height: 1; }

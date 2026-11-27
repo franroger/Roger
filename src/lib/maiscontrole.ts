@@ -259,7 +259,11 @@ const condicaoDoDia = (a: string, b: string): CondicaoDia => {
 export function previaRdoMaisControle(obra: Obra, rdo: RdoMaisControle): PreviaRdo {
   const avisos: string[] = [];
   if (!rdo.data) avisos.push('Não encontrei a data do RDO.');
-  if (rdo.obra && obra.nome && !norm(obra.nome).includes(norm(rdo.obra).slice(0, 12)) && !norm(rdo.obra).includes(norm(obra.nome).slice(0, 12))) {
+  // Compara palavras distintivas (≥ 5 letras), tolerando letras dobradas: "Passargada" = "Pasárgada"
+  const palavras = (s: string) => new Set(norm(s).replace(/(.)\1+/g, '$1').split(/[^a-z0-9]+/).filter((w) => w.length >= 5 && !['condominio', 'edificio', 'residencial', 'reforma', 'fachada', 'fachadas'].includes(w)));
+  const pr = palavras(rdo.obra);
+  const mesmaObra = [...palavras(`${obra.nome} ${obra.cliente}`)].some((w) => pr.has(w));
+  if (rdo.obra && obra.nome && !mesmaObra) {
     avisos.push(`O RDO é da obra "${rdo.obra}" e você está na obra "${obra.nome}". Confira antes de aplicar.`);
   }
   const terceiro = (n: string) => /\b(ltda|me|eireli|s\/?a|epp|servi[cç]os|engenharia|constru)\b/i.test(n);

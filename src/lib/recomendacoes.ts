@@ -130,7 +130,16 @@ export function gerarRecomendacoes(obra: Obra, a: AnaliseObra): Recomendacao[] {
     }
   }
 
-  if (a.margemProjetada < 0) {
+  const semCusto = a.custoPrevistoTotal <= 0;
+  if (semCusto) {
+    r.push({
+      gravidade: 'info',
+      area: 'financeiro',
+      titulo: 'Custos previstos não cadastrados',
+      detalhe: 'A planilha tem os preços de venda, mas não o custo previsto de cada etapa. Sem ele não dá para calcular margem, IDC nem estouro de custo.',
+      acao: 'Preencher o custo unitário das etapas em "Orçamento e cronograma" (ou importar a planilha de custos).',
+    });
+  } else if (a.margemProjetada < 0) {
     r.push({
       gravidade: 'critico',
       area: 'financeiro',
@@ -149,7 +158,7 @@ export function gerarRecomendacoes(obra: Obra, a: AnaliseObra): Recomendacao[] {
   }
 
   const estouros = a.itens
-    .filter((x) => x.gasto > 0 && x.desvioCustoProjetado > Math.max(500, x.custoPrevisto * 0.05))
+    .filter((x) => x.custoPrevisto > 0 && x.gasto > 0 && x.desvioCustoProjetado > Math.max(500, x.custoPrevisto * 0.05))
     .sort((x, y) => y.desvioCustoProjetado - x.desvioCustoProjetado);
   for (const x of estouros.slice(0, 6)) {
     const jaEstourou = x.gasto > x.custoPrevisto;

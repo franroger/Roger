@@ -34,10 +34,25 @@ export function quantidadePorLocal(obra: Obra, item: ItemOrcamento): Map<string,
   return mapa;
 }
 
-export function qtdPorPano(obra: Obra, item: ItemOrcamento, local: Local): number {
+/**
+ * Quantidade de um pano. Com larguras por prumada, o pano de um balancim de 6,20 m
+ * vale proporcionalmente mais que o de um de 2,20 m; sem larguras, todos são iguais.
+ * Sem `prumada`, devolve o valor médio.
+ */
+export function qtdPorPano(obra: Obra, item: ItemOrcamento, local: Local, prumada?: number): number {
   const q = quantidadePorLocal(obra, item).get(local.id) ?? 0;
-  const n = Math.max(1, local.pavimentos) * Math.max(1, local.prumadas);
-  return q / n;
+  const pav = Math.max(1, local.pavimentos);
+  const L = local.larguras;
+  if (prumada && L && L.length >= local.prumadas) {
+    const soma = L.slice(0, local.prumadas).reduce((s, x) => s + (x || 0), 0);
+    if (soma > 0) return (q * (L[prumada - 1] || 0)) / soma / pav;
+  }
+  return q / (pav * Math.max(1, local.prumadas));
+}
+
+/** Quantidade de um conjunto de panos ("prumada-pavimento"). */
+export function qtdDosPanos(obra: Obra, item: ItemOrcamento, local: Local, panos: string[]): number {
+  return panos.reduce((s, k) => s + qtdPorPano(obra, item, local, Number(k.split('-')[0])), 0);
 }
 
 export const chavePano = (prumada: number, pavimento: number) => `${prumada}-${pavimento}`;
@@ -143,7 +158,7 @@ export function apontamentoDeTrecho(
       data,
       itemId: item.id,
       localId: local.id,
-      quantidade: panos.length * qtdPorPano(obra, item, local),
+      quantidade: qtdDosPanos(obra, item, local, panos),
       panos,
       ...extra,
     },
