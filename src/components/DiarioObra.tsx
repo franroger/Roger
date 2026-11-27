@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { executadoItem } from '../lib/calc';
 import { fmtData, fmtNum, fmtPct, hojeISO, uid } from '../lib/format';
-import { importarDiario, paraNumero } from '../lib/importar';
+import { baixarRdoDaObra, importarDiario, importarDias, lerRdo, paraNumero } from '../lib/importar';
 import {
   apontamentoDeTrecho,
   chavePano,
@@ -13,7 +13,7 @@ import {
   quantidadeExecutada,
   quantidadePorLocal,
 } from '../lib/producao';
-import type { Apontamento, Local, Obra } from '../lib/types';
+import { ROTULO_CONDICAO, type Apontamento, type Local, type Obra } from '../lib/types';
 import Importador from './Importador';
 import { BotaoConfirmar } from './ui';
 
@@ -416,15 +416,31 @@ export default function DiarioObra({ obra, atualizar }: Props) {
             <h2>Lançar produção do dia</h2>
             <div className="muted peq">Informe o trecho (prumada e pavimentos) ou a quantidade executada.</div>
           </div>
-          <Importador
-            tipo="diario"
-            rotulo="Importar diário de obra"
-            aoImportar={(linhas) => {
-              const { registros, avisos } = importarDiario(obra, linhas);
-              addApontamentos(registros);
-              return { qtd: registros.length, avisos };
-            }}
-          />
+          <div className="linha">
+            {import.meta.env.VITE_MODO !== 'pagina' && (
+              <button className="btn sec" onClick={() => baixarRdoDaObra(obra)} title="Planilha do RDO com as etapas e locais desta obra">
+                Baixar RDO desta obra
+              </button>
+            )}
+            <Importador
+              tipo="diario"
+              rotulo="Importar RDO / diário"
+              aoImportarArquivo={async (arquivo) => {
+                const { producao, dias } = await lerRdo(arquivo);
+                const p = importarDiario(obra, producao);
+                const d = importarDias(dias);
+                atualizar((o) => ({
+                  ...o,
+                  apontamentos: [...(o.apontamentos ?? []), ...p.registros],
+                  // um registro por dia: o importado substitui o da mesma data
+                  diasRdo: [...(o.diasRdo ?? []).filter((x) => !d.registros.some((n) => n.data === x.data)), ...d.registros],
+                }));
+                const avisos = [...p.avisos, ...d.avisos];
+                if (d.registros.length) avisos.unshift(`${d.registros.length} dia(s) com clima, efetivo e ocorrências importados.`);
+                return { qtd: p.registros.length + d.registros.length, avisos };
+              }}
+            />
+          </div>
         </div>
         <div className="form" style={{ marginTop: '.75rem' }}>
           <label className="campo">
@@ -486,6 +502,9 @@ export default function DiarioObra({ obra, atualizar }: Props) {
         </div>
       </div>
 
+      {/* ---------------- DIAS DO RDO ---------------- */}
+      <DiasRdo obra={obra} atualizar={atualizar} />
+
       {/* ---------------- HISTÓRICO ---------------- */}
       <div className="card">
         <h2>Produção registrada ({historico.length})</h2>
@@ -540,5 +559,93 @@ export default function DiarioObra({ obra, atualizar }: Props) {
         )}
       </div>
     </>
+  );
+}
+
+function DiasRdo({ obra, atualizar }: Props) {
+  const dias = [...(obra.diasRdo ?? [])].sort((a, b) => (a.data < b.data ? 1 : -1));
+  if (!dias.length) {
+    return (
+      <div className="card">
+        <h2>Condições dos dias (RDO)</h2>
+        <div className="muted">
+          Nenhum dia importado. A aba "Dias" do RDO traz clima, efetivo, horas paradas e ocorrências — base para justificar prorrogação de prazo.
+        </div>
+      </div>
+    );
+  }
+  const impraticaveis = dias.filter((d) => d.condicao === 'impraticavel').length;
+  const parciais = dias.filter((d) => d.condicao === 'parcial').length;
+  const horas = dias.reduce((s, d) => s + d.horasParadas, 0);
+  const efetivoMedio = dias.reduce((s, d) => s + d.efetivoProprio + d.efetivoTerceirizado, 0) / dias.length;
+  return (
+    <div className="card">
+      <h2>Condições dos dias (RDO)</h2>
+      <div className="linha peq" style={{ margin: '.4rem 0 .6rem', gap: '1.25rem' }}>
+        <span>
+          <b>{dias.length}</b> dia(s) registrados
+        </span>
+        <span className={impraticaveis ? 'neg' : ''}>
+          <b>{impraticaveis}</b> impraticável(is)
+        </span>
+        <span>
+          <b>{parciais}</b> parcialmente praticável(is)
+        </span>
+        <span>
+          <b>{fmtNum(horas)}</b> horas paradas
+        </span>
+        <span>
+          Efetivo médio <b>{fmtNum(efetivoMedio)}</b> pessoas/dia
+        </span>
+      </div>
+      <div className="tabela-wrap" style={{ maxHeight: 380 }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Clima (manhã / tarde)</th>
+              <th>Condição</th>
+              <th className="num">Efetivo próprio</th>
+              <th className="num">Terceirizado</th>
+              <th className="num">Horas paradas</th>
+              <th>Motivo / ocorrências</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {dias.map((d) => (
+              <tr key={d.id}>
+                <td>
+                  {fmtData(d.data)}
+                  {d.responsavel && <div className="peq muted">{d.responsavel}</div>}
+                </td>
+                <td className="peq">
+                  {d.climaManha || '—'} / {d.climaTarde || '—'}
+                </td>
+                <td>
+                  <span className={`tag ${d.condicao === 'impraticavel' ? 'critico' : d.condicao === 'parcial' ? 'atencao' : 'ok'}`}>{ROTULO_CONDICAO[d.condicao]}</span>
+                </td>
+                <td className="num">{d.efetivoProprio || '—'}</td>
+                <td className="num">{d.efetivoTerceirizado || '—'}</td>
+                <td className="num">{d.horasParadas || '—'}</td>
+                <td className="peq">
+                  {d.motivoParalisacao && <b>{d.motivoParalisacao}. </b>}
+                  {d.ocorrencias}
+                </td>
+                <td>
+                  <button
+                    className="btn perigo mini"
+                    title="Excluir dia"
+                    onClick={() => atualizar((o) => ({ ...o, diasRdo: (o.diasRdo ?? []).filter((x) => x.id !== d.id) }))}
+                  >
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

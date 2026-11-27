@@ -1,5 +1,5 @@
 import { addDias, hojeISO, uid } from './format';
-import type { DadosContrato, ItemOrcamento, Lancamento, Medicao, Obra } from './types';
+import type { DadosContrato, ItemOrcamento, Lancamento, Local, Medicao, Obra } from './types';
 import { contratoVazio } from './types';
 import { gerarParcelas } from './contrato';
 import { apontamentoDeTrecho, locaisPadrao } from './producao';
@@ -131,11 +131,18 @@ export function obraExemplo(): Obra {
   contrato.parcelas = gerarParcelas(obra, contrato);
 
   // Fachadas (10 pavimentos) e produção do diário para as etapas de fachada.
-  const locais = locaisPadrao(10, 4200);
-  const ids = locais.map((l) => l.id);
-  const comLocais = itens.map((i) =>
-    ['2.1', '2.2', '4.2'].includes(i.codigo) ? { ...i, locais: ids } : i.codigo === '4.1' ? { ...i, locais: ids.slice(0, 2) } : i,
-  );
+  const fachadas = locaisPadrao(10, 4200);
+  const ids = fachadas.map((l) => l.id);
+  const cobertura: Local = { id: uid(), nome: 'Cobertura', area: 650, pavimentos: 1, prumadas: 1 };
+  const reservatorios: Local = { id: uid(), nome: 'Reservatórios', area: 180, pavimentos: 1, prumadas: 1 };
+  const locais = [...fachadas, cobertura, reservatorios];
+  const comLocais = itens.map((i) => {
+    if (['2.1', '2.2', '4.2'].includes(i.codigo)) return { ...i, locais: ids };
+    if (i.codigo === '4.1') return { ...i, locais: ids.slice(0, 2) };
+    if (i.codigo === '3.1') return { ...i, locais: [cobertura.id] };
+    if (i.codigo === '3.2') return { ...i, locais: [reservatorios.id] };
+    return i;
+  });
   let parcial: Obra = { ...obra, itens: comLocais, locais, apontamentos: [] };
   const registrar = (codigo: string, localIdx: number, dia: number, prumadas: number[], de: number, ate: number, equipe: string) => {
     const item = parcial.itens.find((i) => i.codigo === codigo)!;

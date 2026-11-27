@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { baixarModelo, lerPlanilha, type TipoImportacao } from '../lib/importar';
 
 const TEXTO: Record<TipoImportacao, string> = {
-  diario: 'Colunas reconhecidas: Data, Etapa (código), Local (nome da fachada/área), Prumada (ex.: 3 ou 1-4), Pavimento inicial, Pavimento final, Quantidade, Equipe, Observação. Use o trecho (prumada + pavimentos) OU a quantidade.',
+  diario: 'Aceita o RDO em Excel (abas "Produção" e "Dias") ou uma planilha simples. Produção: Data, Etapa (código), Local (nome da fachada/área), Prumada (ex.: 3 ou 1-4), Pavimento inicial, Pavimento final, Quantidade, Equipe, Observação. Use o trecho (prumada + pavimentos) OU a quantidade.',
   orcamento: 'Colunas reconhecidas: Código, Descrição, Unidade, Quantidade, Preço unitário (ou Preço total), Custo unitário (ou Custo total), Execução (Própria / Terceirizada / Mista), Responsável, Início, Fim.',
   andamento: 'Colunas reconhecidas: Data, Código ou Etapa, % Acumulado, Observação. A etapa é localizada pelo código ou pela descrição da planilha orçamentária.',
   financeiro: 'Colunas reconhecidas: Data, Tipo (Despesa/Receita) — ou colunas separadas Entrada/Saída —, Etapa (código), Categoria, Descrição, Valor.',
@@ -12,10 +12,13 @@ const TEXTO: Record<TipoImportacao, string> = {
 export default function Importador({
   tipo,
   aoImportar,
+  aoImportarArquivo,
   rotulo = 'Importar do Excel',
 }: {
   tipo: TipoImportacao;
-  aoImportar: (linhas: Record<string, unknown>[]) => { qtd: number; avisos: string[] };
+  aoImportar?: (linhas: Record<string, unknown>[]) => { qtd: number; avisos: string[] };
+  /** Alternativa: recebe o arquivo inteiro (para planilhas com várias abas). */
+  aoImportarArquivo?: (arquivo: File) => Promise<{ qtd: number; avisos: string[] }>;
   rotulo?: string;
 }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -48,8 +51,8 @@ export default function Importador({
             if (!f) return;
             setErro('');
             try {
-              const linhas = await lerPlanilha(f);
-              setRes(aoImportar(linhas));
+              if (aoImportarArquivo) setRes(await aoImportarArquivo(f));
+              else if (aoImportar) setRes(aoImportar(await lerPlanilha(f)));
             } catch (err) {
               setRes(null);
               setErro(`Não foi possível ler o arquivo: ${(err as Error).message}`);

@@ -74,7 +74,32 @@ export interface Obra {
   locais?: Local[];
   /** Produção registrada no diário de obra. */
   apontamentos?: Apontamento[];
+  /** Condições de cada dia (clima, efetivo, paralisações) vindas do RDO. */
+  diasRdo?: RegistroDia[];
 }
+
+export type CondicaoDia = 'praticavel' | 'parcial' | 'impraticavel';
+
+/** Um dia do Relatório Diário de Obra. */
+export interface RegistroDia {
+  id: string;
+  data: string;
+  responsavel: string;
+  climaManha: string;
+  climaTarde: string;
+  condicao: CondicaoDia;
+  efetivoProprio: number;
+  efetivoTerceirizado: number;
+  horasParadas: number;
+  motivoParalisacao: string;
+  ocorrencias: string;
+}
+
+export const ROTULO_CONDICAO: Record<CondicaoDia, string> = {
+  praticavel: 'Praticável',
+  parcial: 'Parcialmente praticável',
+  impraticavel: 'Impraticável',
+};
 
 /**
  * Local de execução: uma fachada, a cobertura, um reservatório...

@@ -1,5 +1,5 @@
 import type { AnaliseObra } from './calc';
-import { diffDias, fmtData, fmtMoeda, fmtPct } from './format';
+import { diffDias, fmtData, fmtMoeda, fmtNum, fmtPct } from './format';
 import type { Obra } from './types';
 import { analisarContrato } from './contrato';
 
@@ -254,6 +254,20 @@ export function gerarRecomendacoes(obra: Obra, a: AnaliseObra): Recomendacao[] {
       titulo: 'Condições do contrato não cadastradas',
       detalhe: 'Sem as parcelas e condições de pagamento não é possível alertar sobre recebimentos atrasados ou multas.',
       acao: 'Na aba "Contrato", importe o arquivo do contrato ou preencha as condições.',
+    });
+  }
+
+  // ---------- RDO: dias perdidos ----------
+  const diasRdo = (obra.diasRdo ?? []).filter((d) => d.data <= a.data);
+  const perdidos = diasRdo.filter((d) => d.condicao === 'impraticavel').length + diasRdo.filter((d) => d.condicao === 'parcial').length * 0.5;
+  if (perdidos >= 1) {
+    const chuva = diasRdo.filter((d) => d.condicao !== 'praticavel' && /chuv/i.test(`${d.motivoParalisacao} ${d.climaManha} ${d.climaTarde}`)).length;
+    r.push({
+      gravidade: a.diasAtrasoProjetado > 0 ? 'atencao' : 'info',
+      area: 'planejamento',
+      titulo: `${fmtNum(perdidos)} dia(s) de trabalho perdidos registrados no RDO`,
+      detalhe: `${chuva} dia(s) com chuva entre os não praticáveis. ${a.diasAtrasoProjetado > 0 ? `Atraso projetado: ${a.diasAtrasoProjetado} dias.` : ''}`,
+      acao: 'Usar os RDOs desses dias para formalizar pedido de prorrogação de prazo com o cliente, se o contrato permitir.',
     });
   }
 

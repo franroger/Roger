@@ -45,6 +45,17 @@ Em cada aba há o botão **Baixar modelo** com as colunas esperadas. O importado
 | Diário de obra | Data, Etapa (código), Local, Prumada, Pavimento inicial, Pavimento final **ou** Quantidade, Equipe, Observação |
 | Financeiro | Data, Tipo (Despesa/Receita) ou colunas Entrada/Saída, Etapa, Categoria, Descrição, Valor |
 
+## Relatório Diário de Obra (RDO)
+
+O arquivo [`modelos/RDO-modelo.xlsx`](modelos/RDO-modelo.xlsx) é o RDO para a equipe de campo preencher. Ele tem quatro abas:
+
+- **Instruções**: como preencher, com exemplo.
+- **Produção**: uma linha por serviço do dia, com data, etapa (código), local, prumada, pavimento inicial e final **ou** quantidade, equipe e observação. A descrição e a unidade da etapa aparecem automaticamente.
+- **Dias**: uma linha por dia, com responsável, clima de manhã e de tarde, condição (praticável, parcial, impraticável), efetivo próprio e terceirizado, horas paradas, motivo e ocorrências.
+- **Cadastro**: etapas e locais da obra (os mesmos do aplicativo), que viram listas de escolha nas outras abas.
+
+No aplicativo: obra → **Diário de obra → Importar RDO / diário**. A produção vira quantidade e % das etapas; os dias alimentam o resumo de dias perdidos e a recomendação de prorrogação de prazo. No aplicativo instalado, o botão **Baixar RDO desta obra** gera a planilha já com as etapas e locais da obra (sem as listas de escolha do modelo).
+
 ## Limitações desta versão
 
 - Os dados ficam salvos **no navegador** (localStorage). Use *Backup e dados* para exportar e restaurar. Para vários usuários ao mesmo tempo é preciso um servidor/banco de dados (próximo passo sugerido).
